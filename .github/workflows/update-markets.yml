@@ -1,0 +1,41 @@
+name: 데이터 갱신 · 마켓펄스
+
+on:
+  schedule:
+    # 매 2시간마다 (UTC 기준 05분). KST로는 09:05, 11:05, 13:05 …
+    - cron: "5 */2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-markets
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 파이썬 준비 (표준 라이브러리만 사용)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Polymarket 공개 API에서 마켓 생성
+        run: python3 scripts/fetch_markets.py
+
+      - name: 변경이 있으면 커밋 · 푸시
+        run: |
+          git config user.name  "marketpulse-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/markets.json; then
+            echo "변경 없음 — 커밋하지 않습니다."
+            exit 0
+          fi
+          git add data/markets.json
+          git commit -m "chore(data): 마켓 데이터 자동 갱신 $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push

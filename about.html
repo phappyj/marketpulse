@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서비스 소개 — 마켓펄스</title>
+<meta name="description" content="마켓펄스는 전 세계 예측시장에 공개된 확률 데이터를 한국어 해설과 함께 정리하는 정보 사이트입니다. 운영 방식, 데이터 출처, 편집 원칙을 안내합니다.">
+<link rel="canonical" href="https://phappyj.github.io/marketpulse/about.html">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="./" aria-label="마켓펄스 홈">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13h4l2.5-7 4 14 2.5-7H22"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">마켓펄스</span>
+        <span class="brand-sub">MarketPulse · 예측 확률 트래커</span>
+      </span>
+    </a>
+    <div class="header-meta">
+      <a class="pill" href="./">← 전체 이슈 보기</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <article class="page">
+    <h1>서비스 소개</h1>
+    <p class="page-meta">마켓펄스(MarketPulse) · 최종 수정 2026년 11월 20일</p>
+
+    <p>마켓펄스는 <strong>전 세계 예측시장에서 거래되는 확률 데이터를 한국어로 정리해 보여주는 정보 사이트</strong>입니다.
+      미국의 금리 결정, 비트코인의 가격, AI 기업의 몸값, 중동과 유럽의 정치·외교 이슈처럼
+      숫자로 기대를 말할 수 있는 주제를 골라, 그 확률이 실제로 무엇을 뜻하는지 해설과 함께 제공합니다.</p>
+
+    <div class="panel">
+      <h3>왜 만들었나</h3>
+      <p>주식·환율·금리 뉴스는 넘쳐나지만, “시장 참가자들이 지금 이 사건을 몇 % 확률로 보고 있는가”를
+        한눈에 정리해 주는 한국어 콘텐츠는 드뭅니다. 해외 예측시장에는 그런 데이터가 공개되어 있지만
+        영어로, 그리고 시장 화면 형태로만 존재합니다. 마켓펄스는 그 숫자를 <strong>읽을 수 있는 문장과 해설</strong>로
+        바꾸는 일을 합니다.</p>
+    </div>
+
+    <h2>무엇을 보여주나요</h2>
+    <ul>
+      <li><strong>YES / NO 확률</strong> — 해당 사건이 일어날 것이라고 참가자들이 매긴 기대값(%)입니다.</li>
+      <li><strong>24시간·누적 거래량</strong> — 그 확률에 얼마나 많은 돈과 관심이 실렸는지를 보여줍니다. 거래량이 적으면 확률이 쉽게 흔들립니다.</li>
+      <li><strong>마감일</strong> — 사건이 판정되는 시점입니다. 미국 동부시간 기준 마감일을 한국어로 표기합니다.</li>
+      <li><strong>24시간 변동</strong> — 직전 24시간 동안 확률이 몇 %p 움직였는지 표시합니다.</li>
+      <li><strong>이슈 배경 &amp; 관전 포인트</strong> — 카드를 펼치면 왜 이 이슈가 중요한지, 무엇을 보면 좋은지 짧은 해설이 나옵니다.</li>
+    </ul>
+
+    <h2>카테고리</h2>
+    <table>
+      <thead><tr><th>카테고리</th><th>다루는 주제</th></tr></thead>
+      <tbody>
+        <tr><td>경제·금리</td><td>미 연준(Fed)의 금리 결정, 연간 인상·인하 횟수, 국제유가 등 매크로 지표</td></tr>
+        <tr><td>코인·금융</td><td>비트코인·이더리움 가격 경로, 온체인 상징 이벤트, 주요 금융 이슈</td></tr>
+        <tr><td>AI·테크</td><td>AI 기업의 기업가치와 상장(IPO), 빅테크 시가총액 순위, AI 모델 경쟁</td></tr>
+        <tr><td>글로벌</td><td>중동·유럽의 지정학 리스크, 휴전·분쟁, 주요국 선거, 해상 물류</td></tr>
+      </tbody>
+    </table>
+
+    <h2>데이터는 어떻게 들어오나요</h2>
+    <p>Polymarket이 공개하는 무료 API(Gamma API)에서 경제·금리, 코인, AI·테크, 글로벌 태그의 마켓을
+      수집합니다. 그중 <strong>한국어 해설이 준비된 이슈를 우선 선별</strong>하고, 부족한 카테고리는 거래량 기준으로
+      자동 보충합니다. 선별이 끝나면 <code>data/markets.json</code> 파일로 저장되고, 이 사이트는 그 파일을 읽어
+      화면을 그립니다. 갱신은 <strong>2시간마다 자동</strong>으로 이뤄지며, 상단의 ‘업데이트 시각’이 마지막 갱신 시점입니다.</p>
+
+    <h2>편집 원칙</h2>
+    <ol>
+      <li><strong>정보만 제공합니다.</strong> 베팅·거래·입금·회원가입 기능을 제공하지 않고, 예측시장이나 베팅
+        사이트로 연결되는 링크·제휴 코드도 넣지 않습니다.</li>
+      <li><strong>국내 정치·선거는 다루지 않습니다.</strong> 경제·금융·기술·국제 이슈로 범위를 한정합니다.</li>
+      <li><strong>해설 없는 숫자는 싣지 않습니다.</strong> 모든 카드에는 짧은 배경 설명과 관전 포인트가 붙습니다.</li>
+      <li><strong>출처를 밝힙니다.</strong> 모든 확률은 Polymarket 공개 데이터에서 왔으며, 마켓펄스가 계산하거나
+        보증하는 값이 아닙니다.</li>
+      <li><strong>틀릴 수 있음을 인정합니다.</strong> 확률은 예측이 아니라 가격입니다. 투자 판단의 참고 지표로만
+        사용하시길 권합니다. 자세한 내용은 <a href="disclaimer.html">면책 고지</a>를 참고하세요.</li>
+    </ol>
+
+    <h2>한계</h2>
+    <p>예측시장의 확률은 참가자 구성과 유동성에 따라 달라집니다. 거래량이 적은 마켓은 소수 참가자의 의견이
+      과도하게 반영될 수 있고, 마감이 임박하면 변동성이 커집니다. 또한 마켓의 판정 기준(예: 종가 기준인지
+      장중 터치 기준인지)에 따라 같은 사건도 확률이 달라질 수 있으므로, 카드 안의 <strong>원문 질문</strong>을 함께
+      확인하시길 권합니다.</p>
+
+    <h2>문의</h2>
+    <p>데이터 오류 제보, 해설 보완 요청, 제휴·광고 문의는 저장소 이슈로 남겨 주세요:
+      <a href="https://github.com/phappyj/marketpulse/issues" rel="noopener">github.com/phappyj/marketpulse/issues</a></p>
+
+    <a class="back" href="./">← 마켓펄스 홈으로</a>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <p>글로벌 예측시장의 공개 확률 데이터를 한국어 해설과 함께 정리하는 정보 사이트입니다.
+          베팅·거래·투자 권유를 목적으로 하지 않습니다.</p>
+      </div>
+      <nav class="footer-links" aria-label="사이트 정보">
+        <a href="./">홈</a>
+        <a href="about.html">서비스 소개</a>
+        <a href="privacy.html">개인정보처리방침</a>
+        <a href="disclaimer.html">면책 고지</a>
+      </nav>
+    </div>
+    <div class="footer-legal">
+      <p><strong>데이터 출처</strong> · Polymarket Gamma 공개 API.</p>
+      <p>© 2026 MarketPulse. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
