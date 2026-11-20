@@ -377,10 +377,11 @@ create or replace function public.yp_delete_post(p_id bigint, p_pw text)
 returns jsonb
 language plpgsql security definer set search_path = public, pg_temp
 as $$
-declare v_hash text;
+declare v_hash text; v_client text;
 begin
-  select pw_hash into v_hash from public.yp_posts where id = p_id;
+  select pw_hash, client_id into v_hash, v_client from public.yp_posts where id = p_id;
   if v_hash is null then raise exception 'not_found'; end if;
+  if v_client = 'system-notice' then raise exception 'protected_post'; end if;
   if p_pw !~ '^[0-9]{4}$' then raise exception 'bad_pw'; end if;
   if v_hash <> extensions.crypt(p_pw, v_hash) then raise exception 'wrong_pw'; end if;
   delete from public.yp_posts where id = p_id;

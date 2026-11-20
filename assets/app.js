@@ -58,6 +58,7 @@
     text_too_long: "내용이 너무 깁니다. 조금 줄여 주세요.",
     post_not_found: "삭제되었거나 없는 글입니다.",
     not_found: "이미 삭제된 항목입니다.",
+    protected_post: "운영 공지 글은 삭제할 수 없습니다.",
     "PGRST202": "서버 기능을 찾지 못했습니다. 잠시 후 다시 시도해 주세요."
   };
   function errMsg(e) {
