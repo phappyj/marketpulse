@@ -98,6 +98,8 @@
   /* ---------------- API ---------------- */
   function api(path, body, method) {
     var url = CFG.url + "/rest/v1/" + path;
+    var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 12000) : null;
     return fetch(url, {
       method: method || (body ? "POST" : "GET"),
       headers: {
@@ -105,7 +107,8 @@
         "Authorization": "Bearer " + CFG.key,
         "Content-Type": "application/json"
       },
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
+      signal: ctrl ? ctrl.signal : undefined
     }).then(function (r) {
       return r.text().then(function (txt) {
         var data = null;
@@ -117,9 +120,27 @@
         }
         return data;
       });
+    }).then(function (data) {
+      if (timer) clearTimeout(timer);
+      return data;
+    }, function (e) {
+      if (timer) clearTimeout(timer);
+      throw (e && e.name === "AbortError") ? new Error("요청 시간이 초과되었습니다.") : e;
     });
   }
-  var rpc = function (name, args) { return api("rpc/" + name, args || {}); };
+
+  // 읽기 전용 RPC — 실패하면 한 번만 다시 시도합니다(쓰기는 재시도하지 않음)
+  var READ_RPCS = {
+    yp_vote_tally: 1, yp_my_votes: 1, yp_comment_counts: 1,
+    yp_issue_comments: 1, yp_list_posts: 1, yp_get_post: 1
+  };
+  function rpc(name, args) {
+    var call = function () { return api("rpc/" + name, args || {}); };
+    if (!READ_RPCS[name]) return call();
+    return call().catch(function (e) {
+      return new Promise(function (res) { setTimeout(res, 600); }).then(call);
+    });
+  }
 
   /* ---------------- time ---------------- */
   function relTime(iso) {
