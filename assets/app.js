@@ -218,13 +218,13 @@
       '<div class="vote" data-vote="' + esc(key) + '">' +
         '<button type="button" class="vote-btn yes' + (mine === "yes" ? " mine" : "") + '" data-choice="yes" aria-pressed="' + (mine === "yes") + '">' +
           '<span class="row"><span>👍 YES 간다</span>' +
-          '<span class="pct">' + (tot ? yp + "%" : "—") + '</span></span>' +
-          '<span class="cnt">' + (tot ? t.yes + "명" : "첫 투표") + '</span>' +
+          '<span class="pct">' + (tot ? yp + "%" : "0%") + '</span></span>' +
+          '<span class="cnt">' + (tot ? t.yes + "명 참여" : "첫 투표") + '</span>' +
         '</button>' +
         '<button type="button" class="vote-btn no' + (mine === "no" ? " mine" : "") + '" data-choice="no" aria-pressed="' + (mine === "no") + '">' +
           '<span class="row"><span>👎 NO 꺾인다</span>' +
-          '<span class="pct">' + (tot ? np + "%" : "—") + '</span></span>' +
-          '<span class="cnt">' + (tot ? t.no + "명" : "첫 투표") + '</span>' +
+          '<span class="pct">' + (tot ? np + "%" : "0%") + '</span></span>' +
+          '<span class="cnt">' + (tot ? t.no + "명 참여" : "첫 투표") + '</span>' +
         '</button>' +
         '<div class="vote-note" style="grid-column:1/-1">' +
           (tot ? "예측판 여론 " + tot + "명 참여" + (mine ? " · 내 선택 " + (mine === "yes" ? "YES" : "NO") : "")
