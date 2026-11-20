@@ -204,7 +204,9 @@ PRIVACY = """    <h1>개인정보처리방침</h1>
     </table>
 
     <h2>2. 브라우저 저장소(쿠키·로컬스토리지)</h2>
-    <p>사이트 자체는 추적 쿠키를 사용하지 않습니다. 다만 광고 게재를 위해 Google AdSense가 쿠키를 사용할 수 있습니다(8항 참고).
+    <p>방문 통계를 위해 Google Analytics 4(측정 ID G-D0QGKN71ZE)를 사용합니다. 이 도구는 방문 기록을 쿠키(_ga, _ga_*)로 저장하며,
+      브라우저 쿠키를 차단하거나 <a href="https://tools.google.com/dlpage/gaoptout" rel="noopener">Google Analytics 차단 브라우저 부가기능</a>을 설치해
+      수집을 거부할 수 있습니다. 거부해도 콘텐츠 열람에는 지장이 없습니다. 광고 게재를 위해 Google AdSense도 쿠키를 사용할 수 있습니다(8항 참고).
       중복 투표 방지와 도배 방지를 위해
       <strong>무작위 식별값</strong>을 브라우저의 로컬스토리지에 저장합니다. 이 값은 이름·이메일과 연결되지 않으며,
       브라우저 저장소를 지우면 새 값이 생성됩니다. 저장소를 차단하면 투표·댓글 작성이 제한될 수 있습니다.</p>
@@ -214,6 +216,7 @@ PRIVACY = """    <h1>개인정보처리방침</h1>
     <ul>
       <li><strong>Supabase Inc.</strong> — 데이터베이스 호스팅. 프로젝트 리전: 대한민국(서울, AWS ap-northeast-2)</li>
       <li><strong>GitHub, Inc.</strong> — 정적 웹 페이지 호스팅(GitHub Pages)</li>
+      <li><strong>Google LLC</strong> — 방문 통계(Google Analytics 4). 수집된 통계 데이터는 미국 등 국외 서버에서 처리됩니다.</li>
     </ul>
     <p>위 사업자는 서비스 제공에 필요한 범위에서만 데이터를 처리하며, 이용자의 개인정보를 판매하지 않습니다.</p>
 
@@ -241,6 +244,8 @@ PRIVACY = """    <h1>개인정보처리방침</h1>
       <a href="https://adssettings.google.com" rel="noopener">Google 광고 설정</a> 또는
       <a href="https://www.aboutads.info" rel="noopener">www.aboutads.info</a>에서 해제할 수 있으며,
       Google의 광고 쿠키 사용에 대한 자세한 내용은 Google 광고 정책 페이지에서 확인할 수 있습니다.
+      방문 통계는 Google Analytics 4로 수집하며, 방문한 페이지·체류·유입 경로 같은 이용 형태를
+      개인을 식별하지 않는 형태로 집계합니다. 수집 거부는 2항의 차단 부가기능으로 할 수 있습니다.
       이 밖에 사이트가 직접 운영하는 통계·추적 도구는 사용하지 않습니다.</p>
 
     <h2>9. 방침의 변경</h2>
