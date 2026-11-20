@@ -612,3 +612,6 @@ a:hover { text-decoration: underline; }
   .feature h3 { font-size: 16px; }
   .feature-num .big { font-size: 38px; }
 }
+
+/* 앵커 이동 시 스티키 헤더에 가리지 않도록 */
+section[id] { scroll-margin-top: 76px; }
