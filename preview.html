@@ -23,7 +23,10 @@
     var h = parseInt(p.get("h") || "1200", 10);
     var f = document.getElementById("frame");
     f.width = w; f.height = h;
-    f.src = src;
+    var hash = "";
+    var hi = src.indexOf("#");
+    if (hi >= 0) { hash = src.slice(hi); src = src.slice(0, hi); }
+    f.src = src + (src.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now() + hash;
     document.getElementById("bar").textContent = "검수용 미리보기 · " + w + "px · " + src;
   })();
 </script>
