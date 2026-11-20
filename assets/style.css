@@ -773,7 +773,9 @@ img, svg { vertical-align: middle; }
   .top3-grid { grid-template-columns: 1fr; }
   .top3-item { padding: 9px 10px; }
 
-  .board-bar { padding: 7px 8px; }
+  .board-bar { padding: 7px 8px; flex-wrap: nowrap; }
+  .board-bar .cat-tabs { flex: 1 1 auto; min-width: 0; }
+  .board-bar .result-count { flex: none; margin-left: 4px; }
   .cat-tabs .chip-btn { padding: 4px 8px; font-size: 12px; }
   .bhead, .tbl-head { display: none; }
 
