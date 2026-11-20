@@ -162,6 +162,7 @@
   /* ---------------- state ---------------- */
   var state = {
     data: null,
+    byMid: {},      // Polymarket market id -> item
     cat: "all",
     q: "",
     openKey: null,
@@ -818,14 +819,234 @@
     });
   }
 
+  /* ==========================================================================
+     실시간 확률 — 브라우저가 Polymarket Gamma API를 직접 조회합니다.
+     · 첫 화면은 data/markets.json으로 즉시 그리고(SEO·폴백), 곧바로 실시간 값으로 덮어씁니다.
+     · 실패·타임아웃(5초)이면 저장된 값을 조용히 유지합니다(화면을 깨지 않음).
+     ========================================================================== */
+  var LIVE = {
+    api: "https://gamma-api.polymarket.com",
+    batch: 8,          // 한 요청에 묶는 마켓 수
+    timeout: 5000,     // 요청 타임아웃(ms)
+    interval: 60000,   // 자동 갱신 주기(ms)
+    inFlight: false,
+    applied: false,
+    lastAt: 0
+  };
+
+  function jarr(v) {
+    if (Array.isArray(v)) return v;
+    if (!v) return [];
+    try { var a = JSON.parse(v); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  }
+  function numOrNull(v) {
+    if (v === null || v === undefined || v === "") return null;
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+  function r1(n) { return Math.round(Number(n) * 10) / 10; }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+  function liveRef(it) {
+    if (it.mid) return { key: "id", val: String(it.mid) };
+    if (it.condition_id) return { key: "condition_ids", val: String(it.condition_id) };
+    if (it.slug) return { key: "slug", val: String(it.slug) };
+    return null;
+  }
+
+  function fetchLiveBatch(refKey, ids) {
+    var url = LIVE.api + "/markets?" + ids.map(function (v) {
+      return refKey + "=" + encodeURIComponent(v);
+    }).join("&") + "&_=" + Math.floor(Date.now() / LIVE.interval);
+    var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) { /* ignore */ } }, LIVE.timeout) : null;
+    return fetch(url, { cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) {
+        if (timer) clearTimeout(timer);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      }, function (e) {
+        if (timer) clearTimeout(timer);
+        throw e;
+      });
+  }
+
+  function setNum(obj, field, value) {
+    if (value === null) return false;
+    if (Number(obj[field]) === Number(value)) return false;
+    obj[field] = value;
+    return true;
+  }
+
+  /* Gamma 응답 한 건을 카드 데이터에 반영합니다. 반영 여부를 돌려줍니다. */
+  function applyLiveRow(row) {
+    if (!row || row.id === undefined || row.id === null) return false;
+    var it = state.byMid[String(row.id)];
+    if (!it) return false;
+    var prices = jarr(row.outcomePrices);
+    var yes = numOrNull(prices[0]);
+    if (yes === null || yes < 0 || yes > 1) return false;
+
+    var changed = false;
+    if (setNum(it, "yes", r1(yes * 100))) changed = true;
+    if (setNum(it, "no", r1((1 - yes) * 100))) changed = true;
+
+    var d1 = numOrNull(row.oneDayPriceChange);
+    if (d1 !== null && setNum(it, "change_24h", r1(d1 * 100))) changed = true;
+    var d7 = numOrNull(row.oneWeekPriceChange);
+    if (d7 !== null && setNum(it, "change_1w", r1(d7 * 100))) changed = true;
+
+    var v24 = numOrNull(row.volume24hr);
+    if (v24 !== null && setNum(it, "volume_24h", Math.round(v24))) changed = true;
+    var vt = numOrNull(row.volumeNum !== undefined && row.volumeNum !== null ? row.volumeNum : row.volume);
+    if (vt !== null && setNum(it, "volume_total", Math.round(vt))) changed = true;
+    var lq = numOrNull(row.liquidityNum !== undefined && row.liquidityNum !== null ? row.liquidityNum : row.liquidity);
+    if (lq !== null && setNum(it, "liquidity", Math.round(lq))) changed = true;
+
+    it.live = true;
+    return changed;
+  }
+
+  /* 상세 모달은 숫자 노드만 바꿔 다시 그립니다 — 댓글 폼에 입력 중인 내용을 지키기 위해서입니다. */
+  function patchDetail() {
+    if (!state.openKey) return;
+    var ov = $("detail-ov");
+    if (!ov || !ov.classList.contains("show")) return;
+    var it = itemByKey(state.openKey);
+    var body = $("dd-body");
+    if (!it || !body) return;
+
+    var pv = body.querySelector(".dd-pv");
+    if (pv) pv.innerHTML = pct(it.yes) + "<small>%</small>";
+    var side = body.querySelector(".dd-prob .side b");
+    if (side) side.textContent = pct(it.no) + "%";
+    var gauge = body.querySelector(".dd-glob .gauge i");
+    if (gauge) gauge.style.width = Math.max(2, Math.min(100, Number(it.yes) || 0)) + "%";
+
+    var facts = body.querySelectorAll(".dd-facts li b");
+    if (facts[0]) facts[0].textContent = money(it.volume_24h);
+    if (facts[1]) facts[1].textContent = money(it.volume_total);
+    if (facts[3]) {
+      var w = Number(it.change_1w) || 0;
+      facts[3].className = w < 0 ? "down" : "up";
+      facts[3].textContent = (w > 0 ? "+" : "") + pct(w) + "p";
+    }
+    var delta = $("dd-delta");
+    if (delta) delta.innerHTML = deltaChip(it.change_24h);
+  }
+
+  function paintLive(redraw) {
+    setLiveStamp(new Date());
+    if (!redraw) return;
+    renderFeatured();
+    renderCards();
+    renderSidebar();
+    patchDetail();
+  }
+
+  /* 실시간 재조회 — 성공하면 true. 실패해도 예외를 던지지 않습니다(기존 값 유지). */
+  function liveRefresh(manual) {
+    if (LIVE.inFlight) return Promise.resolve(false);
+    var items = (state.data && state.data.items) || [];
+    if (!items.length) return Promise.resolve(false);
+
+    var groups = { id: [], condition_ids: [], slug: [] };
+    items.forEach(function (it) {
+      var ref = liveRef(it);
+      if (ref && groups[ref.key]) groups[ref.key].push(ref.val);
+    });
+
+    var jobs = [];
+    Object.keys(groups).forEach(function (key) {
+      var list = groups[key];
+      for (var i = 0; i < list.length; i += LIVE.batch) {
+        jobs.push(fetchLiveBatch(key, list.slice(i, i + LIVE.batch)));
+      }
+    });
+    if (!jobs.length) return Promise.resolve(false);
+
+    LIVE.inFlight = true;
+    return Promise.all(jobs.map(function (p) {
+      return p.then(function (rows) { return rows; }, function (e) { return e; });
+    })).then(function (results) {
+      var rowsOk = 0, applied = 0, changed = 0, failed = 0, matchedIds = {};
+      results.forEach(function (res) {
+        if (!Array.isArray(res)) { failed += 1; return; }
+        rowsOk += 1;
+        res.forEach(function (row) {
+          if (!row || row.id === undefined) return;
+          matchedIds[String(row.id)] = 1;
+          if (!state.byMid[String(row.id)]) return;
+          applied += 1;
+          if (applyLiveRow(row)) changed += 1;
+        });
+      });
+      if (!applied) throw new Error("no-live-match");
+      LIVE.applied = true;
+      LIVE.lastAt = Date.now();
+      if (failed) console.warn("[live] 일부 요청 실패(" + failed + "/" + jobs.length + ")" + (manual ? " · 수동 갱신" : ""));
+      paintLive(changed > 0);
+      return true;
+    }).catch(function (e) {
+      console.warn("[live] 실시간 갱신 실패 — 저장된 값을 유지합니다:", e && (e.name === "AbortError" ? "timeout" : e.message));
+      return false;
+    }).then(function (ok) {
+      LIVE.inFlight = false;
+      return ok;
+    });
+  }
+
+  var liveTimer = null, liveVisibilityBound = false;
+  function startLiveTimer() {
+    if (liveTimer) clearInterval(liveTimer);
+    liveTimer = setInterval(function () {
+      if (document.visibilityState && document.visibilityState !== "visible") return;
+      if (!state.data) return;
+      liveRefresh();          // 조용한 백그라운드 갱신
+    }, LIVE.interval);
+    if (liveVisibilityBound) return;
+    liveVisibilityBound = true;
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState !== "visible") return;
+      if (!state.data) return;
+      if (Date.now() - LIVE.lastAt >= LIVE.interval) liveRefresh();
+    });
+  }
+
   /* ---------------- load ---------------- */
   function setStamp(label) {
     var full = $("updated-at"), short = $("updated-at-short");
+    var stamp = $("stamp"), lab = $("stamp-label");
     var text = String(label || "—");
     var m = text.match(/(\d+)월 (\d+)일 (\d+:\d+)/);
     var compact = m ? m[1] + "." + m[2] + " " + m[3] : text.replace(/\s*\(KST\)/, "");
+    if (stamp) stamp.classList.remove("live");
+    if (lab) lab.textContent = "갱신";
     if (full) full.textContent = m ? (m[1] + "월 " + m[2] + "일 " + m[3]) : text;
     if (short) short.textContent = compact;
+  }
+
+  /* 실시간 반영 성공 — 🟢 실시간 HH:MM:SS */
+  function setLiveStamp(d) {
+    var stamp = $("stamp"), lab = $("stamp-label");
+    var full = $("updated-at"), short = $("updated-at-short");
+    var hh = pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    var ss = ":" + pad2(d.getSeconds());
+    if (stamp) {
+      stamp.classList.add("live");
+      stamp.setAttribute("title", "브라우저가 폴리마켓 공개 API에서 직접 받은 시각 (KST) · 1분마다 자동 갱신");
+    }
+    if (lab) lab.textContent = "🟢 실시간";
+    if (full) full.textContent = hh + ss;
+    if (short) short.textContent = "🟢 " + hh;
+  }
+
+  function indexItems(data) {
+    var map = {}, items = (data && data.items) || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].mid) map[String(items[i].mid)] = items[i];
+    }
+    state.byMid = map;
   }
 
   function loadData(fresh) {
@@ -834,7 +1055,8 @@
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (data) {
         state.data = data;
-        setStamp(data.updated_label || data.updated_at || "—");
+        indexItems(data);
+        if (!LIVE.applied) setStamp(data.updated_label || data.updated_at || "—");
         var pill = $("pill-count");
         if (pill) pill.textContent = "오늘의 이슈 " + (data.count || (data.items || []).length) + "개";
         renderFeatured();
@@ -891,11 +1113,19 @@
     var btn = $("refresh");
     if (btn) {
       btn.addEventListener("click", function () {
+        if (btn.classList.contains("spinning")) return;
         btn.classList.add("spinning");
-        Promise.all([loadData(true), loadVotes(), loadCommentCounts()])
-          .then(function () { toast("최신 데이터로 갱신했습니다"); })
-          .catch(function (e) { toast("갱신 실패 · 잠시 후 다시 시도해 주세요", true); errorState(e); })
-          .then(function () { btn.classList.remove("spinning"); });
+        // 페이지를 다시 불러오지 않고 실시간 API만 재조회합니다.
+        liveRefresh(true).then(function (ok) {
+          if (ok) { toast("실시간 확률로 갱신했습니다"); return; }
+          // 실시간 API가 막혔을 때만 저장된 데이터로 조용히 대체합니다.
+          return loadData(true).then(function () {
+            toast("실시간 연결이 지연돼 저장된 확률로 갱신했습니다", true);
+          }, function (e) {
+            console.warn(e);
+            toast("갱신하지 못했습니다 · 잠시 후 다시 시도해 주세요", true);
+          });
+        }).then(function () { btn.classList.remove("spinning"); });
       });
     }
 
@@ -904,6 +1134,10 @@
         return loadVotes().then(function () {
           renderFeatured(); renderCards(); return loadCommentCounts();
         });
+      })
+      .then(function () {
+        liveRefresh();     // 저장 데이터로 그린 직후, 곧바로 실시간 값으로 덮어씁니다.
+        startLiveTimer();
       })
       .catch(errorState);
   }

@@ -502,6 +502,7 @@ def norm_market(market: dict, event: dict) -> dict | None:
 
     return {
         "mid": str(market.get("id")),
+        "condition_id": market.get("conditionId") or "",
         "question": question,
         "option": (market.get("groupItemTitle") or "").strip(),
         "event_id": str(event.get("id") or ""),
@@ -658,6 +659,10 @@ def format_item(rule: dict, row: dict) -> dict:
         "rank": rule.get("rank", 90),
         "no_feature": bool(rule.get("no_feature")),
         "title": rule["title"],
+        # 브라우저(app.js)가 Gamma API를 직접 호출해 실시간 확률을 덮어쓸 때 쓰는 식별자.
+        "mid": row["mid"],
+        "slug": row.get("slug", ""),
+        "condition_id": row.get("condition_id", ""),
         "question": row["question"],
         "option": row["option"],
         "event_title": row["event_title"],
