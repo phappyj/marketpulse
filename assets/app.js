@@ -854,8 +854,8 @@
     return null;
   }
 
-  function fetchLiveBatch(refKey, ids) {
-    var url = LIVE.api + "/markets?" + ids.map(function (v) {
+  function fetchLiveBatch(refKey, ids, path) {
+    var url = LIVE.api + (path || "/markets") + "?" + ids.map(function (v) {
       return refKey + "=" + encodeURIComponent(v);
     }).join("&") + "&_=" + Math.floor(Date.now() / LIVE.interval);
     var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
@@ -868,7 +868,20 @@
       }, function (e) {
         if (timer) clearTimeout(timer);
         throw e;
+      })
+      .then(function (data) {
+        if (Array.isArray(data)) return data;                              // /markets
+        if (data && Array.isArray(data.markets)) return data.markets;      // /markets/keyset
+        return [];
       });
+  }
+
+  /* /markets 응답이 비거나 실패하면 keyset 경로로 한 번 더 시도합니다. */
+  function fetchLiveWithFallback(refKey, ids) {
+    var viaKeyset = function () { return fetchLiveBatch(refKey, ids, "/markets/keyset"); };
+    return fetchLiveBatch(refKey, ids, "/markets").then(function (rows) {
+      return (rows && rows.length) ? rows : viaKeyset();
+    }, viaKeyset);
   }
 
   function setNum(obj, field, value) {
@@ -960,7 +973,7 @@
     Object.keys(groups).forEach(function (key) {
       var list = groups[key];
       for (var i = 0; i < list.length; i += LIVE.batch) {
-        jobs.push(fetchLiveBatch(key, list.slice(i, i + LIVE.batch)));
+        jobs.push(fetchLiveWithFallback(key, list.slice(i, i + LIVE.batch)));
       }
     });
     if (!jobs.length) return Promise.resolve(false);
