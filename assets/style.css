@@ -282,8 +282,11 @@ img, svg { vertical-align: middle; }
   overflow: hidden;
 }
 
-.pcard-prob { display: flex; align-items: baseline; gap: 8px; margin-top: auto; padding-top: 12px; }
+/* 글로벌 시장 확률 블록 — 라벨·숫자·게이지·거래량이 한 묶음 */
+.pcard-glob { display: block; margin-top: auto; padding-top: 10px; }
+.pcard-glob .src-lb { display: flex; }
 .pcard-pv {
+  display: block; margin-top: 3px;
   font-size: 32px; font-weight: 800; line-height: 1; color: var(--yes);
   letter-spacing: -.05em; font-variant-numeric: tabular-nums;
 }
@@ -291,7 +294,8 @@ img, svg { vertical-align: middle; }
 .pcard .gauge { margin-top: 8px; height: 6px; border-radius: 3px; background: #DEE7F6; }
 .pcard .gauge i { border-radius: 3px; }
 
-.pcard-foot { margin-top: 12px; }
+/* 예측판 유저 투표 블록 — 구분선으로 글로벌 확률과 분리 */
+.pcard-foot { margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--line); }
 .pcard-meta {
   margin-top: 8px; font-size: 11px; color: var(--muted);
   font-variant-numeric: tabular-nums; letter-spacing: -.01em;
@@ -336,6 +340,29 @@ img, svg { vertical-align: middle; }
   overflow: hidden; margin-top: 5px;
 }
 .gauge i { display: block; height: 100%; background: var(--yes); border-radius: 2px; transition: width .4s ease; }
+
+/* 라벨 — '글로벌 시장 확률'과 '예측판 유저 투표'를 같은 언어로 구분 (카드·상세 공용) */
+.src-lb {
+  display: inline-flex; align-items: center; flex: none;
+  font-size: 10.5px; font-weight: 800; line-height: 1.5;
+  letter-spacing: -.01em; color: var(--muted); white-space: nowrap;
+}
+.src-lb .y { margin-left: 4px; color: var(--yes); font-weight: 800; }
+.src-lb.glob { color: #5B6B87; }
+
+.vote-hd {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 6px; margin-bottom: 7px;
+}
+.vote-hd .st {
+  flex: none; font-size: 10.5px; font-weight: 700; color: var(--meta);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.vote-hd .st .y { color: var(--yes); font-weight: 800; }
+.vote-hd .st .n { color: var(--no); font-weight: 800; }
+.vote-hd .st .c, .vote-hd .st .emp { color: var(--meta); font-weight: 650; }
+.vote-hd .st.bump { animation: statbump .8s ease; }
+@keyframes statbump { 0% { opacity: .3; } 100% { opacity: 1; } }
 
 .vote-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .vbtn {
@@ -393,7 +420,9 @@ img, svg { vertical-align: middle; }
   margin: 10px 0 0; font-size: 19px; font-weight: 800; line-height: 1.4;
   letter-spacing: -.035em; color: var(--ink);
 }
-.dd-prob { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
+.dd-glob { display: block; margin-top: 12px; }
+.dd-glob .src-lb { display: flex; }
+.dmodal .dd-prob { display: flex; align-items: flex-end; gap: 10px; margin-top: 3px; }
 .dd-pv {
   font-size: 34px; font-weight: 800; line-height: 1; color: var(--yes);
   letter-spacing: -.05em; font-variant-numeric: tabular-nums;
@@ -421,8 +450,11 @@ img, svg { vertical-align: middle; }
   font-variant-numeric: tabular-nums;
 }
 .dd-facts .yes b { color: var(--yes); }
+.dd-facts b.up { color: var(--yes); }
+.dd-facts b.down { color: var(--no); }
 
-.dmodal .vote-row { margin-top: 12px; }
+.dd-vote { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.dmodal .vote-row { margin-top: 8px; }
 
 .dd-blocks { display: flex; flex-direction: column; gap: 10px; }
 .dd-block h4 {
@@ -850,10 +882,10 @@ img, svg { vertical-align: middle; }
   .pgrid { gap: 10px; }
   .pcard { padding: 12px 13px 12px; }
   .pcard-t { font-size: 15.5px; margin-top: 7px; }
-  .pcard-prob { margin-top: 10px; padding-top: 0; }
+  .pcard-glob { margin-top: 10px; padding-top: 0; }
   .pcard-pv { font-size: 29px; }
   .pcard-pv small { font-size: 14px; }
-  .pcard-foot { margin-top: 10px; }
+  .pcard-foot { margin-top: 10px; padding-top: 9px; }
   .pcard .vote-row { gap: 7px; }
   .pcard .vbtn { height: 38px; font-size: 13px; }
   .pcard-meta { margin-top: 7px; }

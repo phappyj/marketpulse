@@ -232,27 +232,38 @@
   }
 
   /* ---------------- 1클릭 투표 ---------------- */
+  /* 라벨 — 카드·상세 공용. 글로벌 시장 확률과 예측판 유저 투표를 같은 언어로 구분합니다. */
+  var LB_GLOBAL = '<span class="src-lb glob">🌐 글로벌 시장 확률<b class="y">YES</b></span>';
+  var LB_USER = '<span class="src-lb user">🇰🇷 예측판 유저 투표</span>';
+
   function voteTotal(key) {
     var t = state.tally[key] || { yes: 0, no: 0 };
     return Number(t.yes || 0) + Number(t.no || 0);
   }
 
+  /* 참여 현황 — 아직 없으면 안내 문구, 있으면 YES/NO 비율과 인원 */
+  function voteStatHTML(key) {
+    var t = state.tally[key] || { yes: 0, no: 0 };
+    var y = Number(t.yes || 0), n = Number(t.no || 0), tot = y + n;
+    if (!tot) return '<span class="emp">아직 0명 · 첫 투표</span>';
+    var yp = Math.round((y / tot) * 100), np = 100 - yp;
+    return '<span class="y">YES ' + yp + '%</span> · <span class="n">NO ' + np + '%</span> <span class="c">(' + tot + '명)</span>';
+  }
+
   function voteHTML(key) {
     var t = state.tally[key] || { yes: 0, no: 0 };
     var tot = (t.yes || 0) + (t.no || 0);
-    var yp = tot ? Math.round((t.yes / tot) * 100) : 0;
-    var np = tot ? 100 - yp : 0;
     var mine = state.mine[key] || "";
     var tip = tot
-      ? "예측판 여론 " + tot + "명 참여 (YES " + t.yes + " · NO " + t.no + ")" + (mine ? " · 내 선택 " + (mine === "yes" ? "YES" : "NO") : "")
-      : "시장 확률과 별개로, 당신의 판단은?";
+      ? "예측판 유저 투표 " + tot + "명 참여 (YES " + t.yes + " · NO " + t.no + ")" + (mine ? " · 내 선택 " + (mine === "yes" ? "YES" : "NO") : "")
+      : "예측판 유저 투표 — 위의 글로벌 시장 확률과 별개로, 당신의 판단은?";
     return '' +
-      '<div class="vote-row" data-vote="' + esc(key) + '">' +
+      '<div class="vote-row" data-vote="' + esc(key) + '" role="group" aria-label="예측판 유저 투표">' +
         '<button type="button" class="vbtn yes' + (mine === "yes" ? " mine" : "") + '" data-choice="yes" aria-pressed="' + (mine === "yes") + '" title="' + esc(tip) + '">' +
-          '👍 YES' + (tot ? ' <b>' + yp + '%</b>' : '') +
+          '👍 YES' +
         '</button>' +
         '<button type="button" class="vbtn no' + (mine === "no" ? " mine" : "") + '" data-choice="no" aria-pressed="' + (mine === "no") + '" title="' + esc(tip) + '">' +
-          '👎 NO' + (tot ? ' <b>' + np + '%</b>' : '') +
+          '👎 NO' +
         '</button>' +
       '</div>';
   }
@@ -311,12 +322,18 @@
         '<div class="pcard-hit" role="button" tabindex="0" data-expand="' + esc(it.key) + '" aria-haspopup="dialog" aria-expanded="false" aria-label="' + esc(it.title) + ' 상세 보기">' +
           '<div class="pcard-top">' + ctag(it.category) + deltaChip(it.change_24h) + cmtChip(it.key) + '</div>' +
           '<h3 class="pcard-t">' + esc(it.title) + '</h3>' +
-          '<div class="pcard-prob"><span class="pcard-pv">' + pct(it.yes) + '<small>%</small></span></div>' +
-          '<span class="gauge"><i style="width:' + Math.max(2, yes) + '%"></i></span>' +
+          '<div class="pcard-glob">' +
+            LB_GLOBAL +
+            '<span class="pcard-pv">' + pct(it.yes) + '<small>%</small></span>' +
+            '<span class="gauge"><i style="width:' + Math.max(2, yes) + '%"></i></span>' +
+            '<div class="pcard-meta">' + meta + '</div>' +
+          '</div>' +
         '</div>' +
         '<div class="pcard-foot">' +
+          '<div class="vote-hd">' + LB_USER +
+            '<span class="st" data-vote-st="' + esc(it.key) + '">' + voteStatHTML(it.key) + '</span>' +
+          '</div>' +
           voteHTML(it.key) +
-          '<div class="pcard-meta">' + meta + '</div>' +
         '</div>' +
       '</article>';
   }
@@ -363,32 +380,33 @@
     var n = state.cmtCount[it.key] || 0;
     return '' +
       '<h2 class="dd-title" id="dd-title">' + esc(it.title) + '</h2>' +
-      '<div class="dd-prob">' +
-        '<span class="dd-pv">' + pct(it.yes) + '<small>%</small></span>' +
-        '<span class="side"><span>시장 NO</span><b>' + pct(it.no) + '%</b></span>' +
+      '<div class="dd-glob">' +
+        LB_GLOBAL +
+        '<div class="dd-prob">' +
+          '<span class="dd-pv">' + pct(it.yes) + '<small>%</small></span>' +
+          '<span class="side"><span>시장 NO</span><b>' + pct(it.no) + '%</b></span>' +
+        '</div>' +
+        '<span class="gauge"><i style="width:' + Math.max(2, yes) + '%"></i></span>' +
       '</div>' +
-      '<span class="gauge"><i style="width:' + Math.max(2, yes) + '%"></i></span>' +
       '<ul class="dd-facts">' +
         '<li>24시간 거래량 <b>' + money(it.volume_24h) + '</b></li>' +
         '<li>누적 거래량 <b>' + money(it.volume_total) + '</b></li>' +
         '<li>마감 <b>' + esc(shortDate(it.end_date)) + (dl ? ' · ' + esc(dl) : '') + '</b></li>' +
-        '<li>예측판 여론 <b data-vote-total="' + esc(it.key) + '">' + voteTotal(it.key) + '명</b></li>' +
+        '<li>최근 1주 변동 <b class="' + (Number(it.change_1w) < 0 ? 'down' : 'up') + '">' +
+          (Number(it.change_1w) > 0 ? '+' : '') + pct(it.change_1w) + 'p</b></li>' +
       '</ul>' +
-      '<div class="vote-row" data-vote="' + esc(it.key) + '">' +
-        '<button type="button" class="vbtn yes' + (state.mine[it.key] === "yes" ? " mine" : "") + '" data-choice="yes" aria-pressed="' + (state.mine[it.key] === "yes") + '">' +
-          '👍 YES' + (voteTotal(it.key) ? ' <b>' + Math.round(((state.tally[it.key] || {}).yes || 0) / voteTotal(it.key) * 100) + '%</b>' : '') +
-        '</button>' +
-        '<button type="button" class="vbtn no' + (state.mine[it.key] === "no" ? " mine" : "") + '" data-choice="no" aria-pressed="' + (state.mine[it.key] === "no") + '">' +
-          '👎 NO' + (voteTotal(it.key) ? ' <b>' + (100 - Math.round(((state.tally[it.key] || {}).yes || 0) / voteTotal(it.key) * 100)) + '%</b>' : '') +
-        '</button>' +
+      '<div class="dd-vote">' +
+        '<div class="vote-hd">' + LB_USER +
+          '<span class="st" data-vote-st="' + esc(it.key) + '">' + voteStatHTML(it.key) + '</span>' +
+        '</div>' +
+        voteHTML(it.key) +
       '</div>' +
       '<div class="dd-blocks">' +
         '<div class="dd-block"><h4>이슈 배경</h4><p>' + esc(it.explain) + '</p></div>' +
         '<div class="dd-block"><h4>관전 포인트</h4><p>' + esc(it.watch) + '</p></div>' +
         '<div class="dd-block origin"><h4>원문 질문</h4><p>' + esc(it.question) + '</p></div>' +
       '</div>' +
-      '<div class="dd-src">출처: Polymarket 공개 데이터' + (it.auto ? ' · 자동 선별 항목' : '') +
-        ' · 최근 1주 변동 ' + (it.change_1w > 0 ? '+' : '') + pct(it.change_1w) + 'p</div>' +
+      '<div class="dd-src">출처: Polymarket 공개 데이터' + (it.auto ? ' · 자동 선별 항목' : '') + '</div>' +
       '<div class="cmt-box" id="dd-cmt" data-cmt-box="' + esc(it.key) + '">' +
         '<div class="cmt-head">💬 이슈 댓글 <span class="n" data-cmt-count2="' + esc(it.key) + '">' + n + '</span></div>' +
         '<div class="cmt-list" data-cmt-list="' + esc(it.key) + '"></div>' +
@@ -471,13 +489,18 @@
     });
   }
 
-  function paintVote(key) {
+  function paintVote(key, pulse) {
     var nodes = document.querySelectorAll('[data-vote="' + key + '"]');
     Array.prototype.forEach.call(nodes, function (node) {
       node.outerHTML = voteHTML(key);
     });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-vote-total="' + key + '"]'), function (el) {
-      el.textContent = voteTotal(key) + "명";
+    Array.prototype.forEach.call(document.querySelectorAll('[data-vote-st="' + key + '"]'), function (el) {
+      el.innerHTML = voteStatHTML(key);
+      if (!pulse) return;
+      el.classList.remove("bump");
+      void el.offsetWidth;
+      el.classList.add("bump");
+      setTimeout(function () { el.classList.remove("bump"); }, 900);
     });
   }
 
@@ -488,7 +511,7 @@
       .then(function (r) {
         state.tally[key] = { yes: Number(r.yes || 0), no: Number(r.no || 0) };
         state.mine[key] = r.my || choice;
-        paintVote(key);
+        paintVote(key, true);
         if (prev && prev !== choice) toast("이미 참여한 투표입니다 · " + (prev === "yes" ? "YES" : "NO") + "로 집계됩니다", true);
       })
       .catch(function (e) {
