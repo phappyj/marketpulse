@@ -20,7 +20,7 @@
   var f = document.getElementById("frame");
   f.width = w;
   f.height = h;
-  f.src = "./" + (hash ? "#" + hash : "");
+  f.src = "./?v=" + Date.now() + (hash ? "#" + hash : "");
 </script>
 </body>
 </html>
