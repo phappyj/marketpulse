@@ -253,4 +253,12 @@
     refreshCurrent: refreshCurrent,
     loadList: loadList
   };
+
+  /* app.js가 먼저 실행되면 수다방 초기화를 놓칠 수 있으므로 여기서 한 번 더 확인합니다. */
+  var pane = $("pane-talk");
+  if (pane && !pane.hidden) {
+    var m = (location.hash || "").match(/^#\/talk\/post\/(\d+)/);
+    if (m) openPost(m[1], { fromHash: true });
+    else showList();
+  }
 })();
