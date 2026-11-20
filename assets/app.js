@@ -208,109 +208,131 @@
     return '<span class="delta-badge flat">변동 없음</span>';
   }
 
-  /* ---------------- vote row ---------------- */
+  /* ---------------- vote row (1클릭 투표) ---------------- */
+  function voteTotal(key) {
+    var t = state.tally[key] || { yes: 0, no: 0 };
+    return Number(t.yes || 0) + Number(t.no || 0);
+  }
+
   function voteHTML(key) {
     var t = state.tally[key] || { yes: 0, no: 0 };
     var tot = (t.yes || 0) + (t.no || 0);
     var yp = tot ? Math.round((t.yes / tot) * 100) : 0;
     var np = tot ? 100 - yp : 0;
     var mine = state.mine[key] || "";
+    var tip = tot
+      ? "예측판 여론 " + tot + "명 참여 (YES " + t.yes + " · NO " + t.no + ")" + (mine ? " · 내 선택 " + (mine === "yes" ? "YES" : "NO") : "")
+      : "시장 확률과 별개로, 당신의 판단은?";
     return '' +
-      '<div class="vote" data-vote="' + esc(key) + '">' +
-        '<button type="button" class="vote-btn yes' + (mine === "yes" ? " mine" : "") + '" data-choice="yes" aria-pressed="' + (mine === "yes") + '">' +
-          '<span class="row"><span>👍 YES 간다</span>' +
-          '<span class="pct">' + (tot ? yp + "%" : "0%") + '</span></span>' +
-          '<span class="cnt">' + (tot ? t.yes + "명 참여" : "첫 투표") + '</span>' +
+      '<span class="mrow-v" data-vote="' + esc(key) + '">' +
+        '<button type="button" class="vbtn yes' + (mine === "yes" ? " mine" : "") + '" data-choice="yes" aria-pressed="' + (mine === "yes") + '" title="' + esc(tip) + '">' +
+          '👍 YES' + (tot ? ' <b>' + yp + '%</b>' : '') +
         '</button>' +
-        '<button type="button" class="vote-btn no' + (mine === "no" ? " mine" : "") + '" data-choice="no" aria-pressed="' + (mine === "no") + '">' +
-          '<span class="row"><span>👎 NO 꺾인다</span>' +
-          '<span class="pct">' + (tot ? np + "%" : "0%") + '</span></span>' +
-          '<span class="cnt">' + (tot ? t.no + "명 참여" : "첫 투표") + '</span>' +
+        '<button type="button" class="vbtn no' + (mine === "no" ? " mine" : "") + '" data-choice="no" aria-pressed="' + (mine === "no") + '" title="' + esc(tip) + '">' +
+          '👎 NO' + (tot ? ' <b>' + np + '%</b>' : '') +
         '</button>' +
-        '<div class="vote-note" style="grid-column:1/-1">' +
-          (tot ? "예측판 여론 " + tot + "명 참여" + (mine ? " · 내 선택 " + (mine === "yes" ? "YES" : "NO") : "")
-               : "시장 확률과 별개로, 당신의 판단은?") +
-        '</div>' +
-      '</div>';
+      '</span>';
   }
 
-  /* ---------------- featured ---------------- */
+  /* ---------------- 오늘의 주요 예측 TOP 3 ---------------- */
   function renderFeatured() {
     var el = $("featured");
     if (!el) return;
     var items = (state.data.items || []).filter(function (it) { return it.featured; })
-      .sort(function (a, b) { return (a.featured_rank || 9) - (b.featured_rank || 9); });
-    if (!items.length) { el.innerHTML = ""; return; }
+      .sort(function (a, b) { return (a.featured_rank || 9) - (b.featured_rank || 9); })
+      .slice(0, 3);
+    if (!items.length) { el.innerHTML = '<div class="loading">주요 이슈를 준비 중입니다.</div>'; return; }
 
     el.innerHTML = items.map(function (it) {
+      var w = Math.max(2, Math.min(100, Number(it.yes) || 0));
       return '' +
-        '<article class="feature" data-rank="' + it.featured_rank + '" data-key="' + esc(it.key) + '" tabindex="0" role="button" aria-label="' + esc(it.title) + ' 해설 열기">' +
-          '<div class="feature-top">' +
-            '<span class="feature-rank">TOP ' + it.featured_rank + '</span>' +
-            '<span class="feature-cat">' + esc(CAT_LABEL[it.category] || "기타") + '</span>' +
-          '</div>' +
-          '<h3>' + esc(it.title) + '</h3>' +
-          '<div class="feature-num">' +
-            '<div class="big">' + pct(it.yes) + '<span>%</span></div>' +
-            '<div class="side">' +
-              '<span class="k">시장 YES 확률</span>' +
-              '<span class="v">NO ' + pct(it.no) + '%</span>' +
-            '</div>' +
-          '</div>' +
-          '<div class="bar"><i style="width:' + Math.max(2, Math.min(100, it.yes)) + '%"></i></div>' +
-          voteHTML(it.key) +
-        '</article>';
+        '<div class="top3-item" data-rank="' + it.featured_rank + '" data-key="' + esc(it.key) + '" tabindex="0" role="button" aria-label="' + esc(it.title) + ' 해설 열기">' +
+          '<span class="top3-rank">' + it.featured_rank + '</span>' +
+          '<span class="top3-body">' +
+            '<span class="top3-tag">' + esc(CAT_LABEL[it.category] || "기타") + ' ' + deltaText(it.change_24h) + '</span>' +
+            '<span class="top3-title">' + esc(it.title) + '</span>' +
+          '</span>' +
+          '<span class="top3-num">' +
+            '<b>' + pct(it.yes) + '<small>%</small></b>' +
+            '<span>YES · NO ' + pct(it.no) + '%</span>' +
+            '<span class="gauge top3-gauge"><i style="width:' + w + '%"></i></span>' +
+          '</span>' +
+        '</div>';
     }).join("");
 
-    Array.prototype.forEach.call(el.querySelectorAll(".feature"), function (node) {
-      node.addEventListener("click", function (e) {
-        if (e.target.closest("[data-vote]")) return;
-        focusCard(node.getAttribute("data-key"));
-      });
+    Array.prototype.forEach.call(el.querySelectorAll(".top3-item"), function (node) {
+      node.addEventListener("click", function () { focusCard(node.getAttribute("data-key")); });
       node.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focusCard(node.getAttribute("data-key")); }
       });
     });
   }
 
-  /* ---------------- cards ---------------- */
-  function cardHTML(it) {
-    var yes = it.yes;
+  /* ---------------- 사이드바: 인기 이슈 TOP 5 ---------------- */
+  function renderSidebar() {
+    var el = $("side-hot");
+    if (!el || !state.data) return;
+    var items = (state.data.items || []).slice().sort(function (a, b) {
+      var fa = a.featured ? 1 : 0, fb = b.featured ? 1 : 0;
+      if (fa !== fb) return fb - fa;
+      return (Number(b.volume_24h) || 0) - (Number(a.volume_24h) || 0);
+    }).slice(0, 5);
+    el.innerHTML = items.map(function (it, i) {
+      return '<li data-hot-key="' + esc(it.key) + '" title="' + esc(it.title) + '">' +
+          '<span class="rk">' + (i + 1) + '</span>' +
+          '<span class="hot-t">' +
+            '<span class="ti">' + esc(it.title) + '</span>' +
+            '<span class="mt">' + esc(CAT_LABEL[it.category] || "기타") + ' · YES <b>' + pct(it.yes) + '%</b></span>' +
+          '</span>' +
+        '</li>';
+    }).join("");
+  }
+
+  /* ---------------- 예측판 행 ---------------- */
+  function rowHTML(it) {
+    var yes = Math.max(0, Math.min(100, Number(it.yes) || 0));
     var n = state.cmtCount[it.key] || 0;
+    var tot = voteTotal(it.key);
     return '' +
-      '<article class="card" data-key="' + esc(it.key) + '" data-cat="' + esc(it.category) + '">' +
-        '<div class="card-head">' +
-          '<span class="chip ' + esc(it.category) + '">' + esc(CAT_LABEL[it.category] || "기타") + '</span>' +
-          deltaText(it.change_24h) +
-        '</div>' +
-        '<h3 class="card-title">' + esc(it.title) + '</h3>' +
-        '<div class="prob">' +
-          '<span class="yes"><span class="lab">시장 YES</span><span class="val">' + pct(yes) + '<small>%</small></span></span>' +
-          '<span class="no"><span class="val">' + pct(it.no) + '<small>%</small></span><span class="lab">NO</span></span>' +
-        '</div>' +
-        '<div class="bar"><i style="width:' + Math.max(2, Math.min(100, yes)) + '%"></i></div>' +
-        '<div class="meta">' +
-          '<span>24시간 <b>' + money(it.volume_24h) + '</b></span>' +
-          '<span>누적 <b>' + money(it.volume_total) + '</b></span>' +
-          '<span><b>' + esc(shortDate(it.end_date)) + '</b> 마감' + (daysLeft(it.end_date) ? " · " + daysLeft(it.end_date) : "") + '</span>' +
-        '</div>' +
-        voteHTML(it.key) +
-        '<div class="card-foot">' +
-          '<button type="button" class="foot-btn" data-cmt-toggle="' + esc(it.key) + '">' +
-            '💬 댓글 <span class="n" data-cmt-count="' + esc(it.key) + '">' + n + '</span>' +
-          '</button>' +
-          '<button type="button" class="foot-btn right" data-expand="' + esc(it.key) + '" aria-expanded="false">' +
-            '<span>배경 해설</span>' +
-            '<span class="chev" aria-hidden="true">' +
-              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+      '<article class="mrow" data-key="' + esc(it.key) + '" data-cat="' + esc(it.category) + '">' +
+        '<div class="mrow-main" tabindex="0" role="button" data-expand="' + esc(it.key) + '" aria-expanded="false" aria-label="' + esc(it.title) + ' 해설 펼치기">' +
+          '<span class="tag ' + esc(it.category) + '">' + esc(CAT_LABEL[it.category] || "기타") + '</span>' +
+          '<span class="mrow-t">' +
+            '<span class="mrow-title">' + esc(it.title) + '</span>' +
+            '<span class="mrow-sub">' +
+              '<span>24h <b>' + money(it.volume_24h) + '</b></span>' +
+              '<span class="sep">|</span>' +
+              '<span>누적 <b>' + money(it.volume_total) + '</b></span>' +
+              '<span class="sep">|</span>' +
+              '<span>' + esc(shortDate(it.end_date)) + ' 마감' + (daysLeft(it.end_date) ? " · " + daysLeft(it.end_date) : "") + '</span>' +
+              deltaText(it.change_24h) +
             '</span>' +
-          '</button>' +
+          '</span>' +
+          '<span class="mrow-p">' +
+            '<span class="pv"><span class="lbl">YES</span>' + pct(it.yes) + '<small>%</small></span>' +
+            '<span class="gauge"><i style="width:' + Math.max(2, yes) + '%"></i></span>' +
+          '</span>' +
+          voteHTML(it.key) +
+          '<span class="mrow-c" title="이슈 댓글">💬 <b data-cmt-count="' + esc(it.key) + '">' + n + '</b></span>' +
+          '<span class="mrow-arrow" aria-hidden="true">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+          '</span>' +
         '</div>' +
         '<div class="detail">' +
-          '<div class="block"><h4>이슈 배경</h4><p>' + esc(it.explain) + '</p></div>' +
-          '<div class="block"><h4>관전 포인트</h4><p>' + esc(it.watch) + '</p></div>' +
-          '<div class="block origin"><h4>원문 질문</h4><p>' + esc(it.question) + '</p></div>' +
-          '<div class="src">출처: Polymarket 공개 데이터' + (it.auto ? " · 자동 선별 항목" : "") +
+          '<div class="facts">' +
+            '<span class="yes">시장 YES <b>' + pct(it.yes) + '%</b></span>' +
+            '<span class="no">NO <b>' + pct(it.no) + '%</b></span>' +
+            '<span>24시간 거래량 <b>' + money(it.volume_24h) + '</b></span>' +
+            '<span>누적 거래량 <b>' + money(it.volume_total) + '</b></span>' +
+            '<span>마감 <b>' + esc(shortDate(it.end_date)) + '</b>' + (daysLeft(it.end_date) ? " · " + daysLeft(it.end_date) : "") + '</span>' +
+            '<span>예측판 여론 <b>' + tot + '명</b> 참여</span>' +
+          '</div>' +
+          '<div class="dgrid">' +
+            '<div class="dblock"><h4>이슈 배경</h4><p>' + esc(it.explain) + '</p></div>' +
+            '<div class="dblock"><h4>관전 포인트</h4><p>' + esc(it.watch) + '</p></div>' +
+            '<div class="dblock full origin"><h4>원문 질문</h4><p>' + esc(it.question) + '</p></div>' +
+          '</div>' +
+          '<div class="dsrc">출처: Polymarket 공개 데이터' + (it.auto ? " · 자동 선별 항목" : "") +
             ' · 최근 1주 변동 ' + (it.change_1w > 0 ? "+" : "") + pct(it.change_1w) + 'p</div>' +
           '<div class="cmt-box" data-cmt-box="' + esc(it.key) + '">' +
             '<div class="cmt-head">💬 이슈 댓글 <span class="n" data-cmt-count2="' + esc(it.key) + '">' + n + '</span></div>' +
@@ -348,15 +370,16 @@
     });
 
     el.innerHTML = items.length
-      ? items.map(cardHTML).join("")
-      : '<div class="empty">조건에 맞는 이슈가 없습니다.<br>다른 키워드로 검색하거나 전체 탭을 눌러 보세요.</div>';
+      ? items.map(rowHTML).join("")
+      : '<div class="empty"><b>조건에 맞는 이슈가 없습니다.</b>다른 키워드로 검색하거나 전체 탭을 눌러 보세요.</div>';
 
-    $("count").textContent = items.length + "개 이슈";
+    var cnt = $("count");
+    if (cnt) cnt.textContent = items.length + "개 이슈";
     updateTabCounts();
     // 열려 있던 카드 복원
     Object.keys(state.open).forEach(function (k) {
       if (!state.open[k]) return;
-      var card = el.querySelector('[data-key="' + k + '"]');
+      var card = el.querySelector('.mrow[data-key="' + k + '"]');
       if (card) { card.classList.add("open"); state.cmtLoaded[k] = false; loadComments(k); }
     });
   }
@@ -373,11 +396,12 @@
   }
 
   function focusCard(key) {
-    var sel = '[data-key="' + String(key).replace(/"/g, '\\"') + '"]';
+    var sel = '.mrow[data-key="' + String(key).replace(/"/g, '\\"') + '"]';
     var card = $("grid") ? $("grid").querySelector(sel) : null;
     if (!card && (state.cat !== "all" || state.q)) {
       state.cat = "all"; state.q = "";
       var input = $("q"); if (input) input.value = "";
+      var sw = $("hd-search-wrap"); if (sw) sw.classList.remove("has-value");
       Array.prototype.forEach.call(document.querySelectorAll("#tabs .chip-btn"), function (t) {
         t.setAttribute("aria-pressed", t.getAttribute("data-cat") === "all" ? "true" : "false");
       });
@@ -385,10 +409,11 @@
       card = $("grid").querySelector(sel);
     }
     if (!card) return;
+    if (document.getElementById("pane-live") && document.getElementById("pane-live").hidden) setTab("live");
     card.scrollIntoView({ behavior: "smooth", block: "center" });
     if (!card.classList.contains("open")) toggleCard(card, true);
-    card.style.borderColor = "rgba(76,141,255,.9)";
-    setTimeout(function () { card.style.borderColor = ""; }, 1500);
+    card.classList.add("flash");
+    setTimeout(function () { card.classList.remove("flash"); }, 1600);
   }
 
   function toggleCard(card, forceOpen) {
@@ -574,24 +599,13 @@
       return;
     }
 
+    var hot = t.closest ? t.closest("[data-hot-key]") : null;
+    if (hot) { focusCard(hot.getAttribute("data-hot-key")); return; }
+
     var exp = t.closest ? t.closest("[data-expand]") : null;
     if (exp) {
-      var card = exp.closest(".card");
+      var card = exp.closest(".mrow");
       if (card) toggleCard(card);
-      return;
-    }
-
-    var ct = t.closest ? t.closest("[data-cmt-toggle]") : null;
-    if (ct) {
-      var c2 = ct.closest(".card");
-      if (c2) toggleCard(c2, true);
-      return;
-    }
-
-    var titleEl = t.closest ? t.closest(".card-title") : null;
-    if (titleEl) {
-      var c3 = titleEl.closest(".card");
-      if (c3) toggleCard(c3);
       return;
     }
 
@@ -621,6 +635,14 @@
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "pw-input") {
       e.preventDefault();
       $("pw-confirm").click();
+    }
+    if (e.key === "Enter" || e.key === " ") {
+      var a = document.activeElement;
+      if (a && a.classList && a.classList.contains("mrow-main")) {
+        e.preventDefault();
+        var row = a.closest(".mrow");
+        if (row) toggleCard(row);
+      }
     }
   });
 
@@ -688,10 +710,21 @@
     if (input) {
       var timer;
       input.addEventListener("input", function () {
+        var sw = $("hd-search-wrap");
+        if (sw) sw.classList.toggle("has-value", !!input.value);
+        var live = $("pane-live");
+        if (input.value && live && live.hidden) setTab("live");
         clearTimeout(timer);
         timer = setTimeout(function () { state.q = input.value; renderCards(); }, 120);
       });
     }
+    var clearBtn = $("q-clear");
+    if (clearBtn) clearBtn.addEventListener("click", function () {
+      if (input) { input.value = ""; input.focus(); }
+      state.q = "";
+      var sw = $("hd-search-wrap"); if (sw) sw.classList.remove("has-value");
+      renderCards();
+    });
   }
 
   /* ---------------- load ---------------- */
@@ -715,6 +748,7 @@
         if (pill) pill.textContent = "오늘의 이슈 " + (data.count || (data.items || []).length) + "개";
         renderFeatured();
         renderCards();
+        renderSidebar();
         return data;
       });
   }
@@ -737,8 +771,8 @@
     setStamp("불러오기 실패");
     var grid = $("grid");
     if (grid) {
-      grid.innerHTML = '<div class="empty">데이터를 불러오지 못했습니다.<br>잠시 후 새로고침(↻)을 눌러 주세요.<br>' +
-        '<span style="font-size:11.5px;color:#6d7c94">' + esc(err && err.message ? err.message : "") + '</span></div>';
+      grid.innerHTML = '<div class="empty"><b>데이터를 불러오지 못했습니다.</b>잠시 후 새로고침(↻)을 눌러 주세요.<br>' +
+        '<span style="font-size:11.5px;color:#8B95A1">' + esc(err && err.message ? err.message : "") + '</span></div>';
     }
     var c = $("count"); if (c) c.textContent = "—";
   }

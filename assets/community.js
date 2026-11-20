@@ -1,6 +1,6 @@
 /* ==========================================================================
-   예측판 YECHEUKPAN — 자유 수다방
-   ·글 목록(말머리 필터), 글쓰기 모달, 글 상세·댓글
+   예측판 YECHEUKPAN — 자유 수다방 (게시판)
+   ·글 목록(말머리 필터·공지 고정), 글쓰기 모달, 글 상세·댓글, 사이드 최신글
    ========================================================================== */
 (function () {
   "use strict";
@@ -12,35 +12,52 @@
   var esc = U.esc;
 
   var CAT = { rate: "금리·증시", coin: "코인", ai: "AI·빅테크", free: "자유" };
+  var TAGCLS = { rate: "economy", coin: "crypto", ai: "ai", free: "free", notice: "free" };
   var state = { cat: "all", posts: [], currentId: null };
+
+  function isNotice(p) { return p && (p.nickname === "예측판" || String(p.id) === "1"); }
+
+  function dateText(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var now = new Date();
+    var same = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    if (same) {
+      var hh = d.getHours(), mm = d.getMinutes();
+      return (hh < 10 ? "0" + hh : hh) + ":" + (mm < 10 ? "0" + mm : mm);
+    }
+    return (d.getMonth() + 1) + "." + d.getDate();
+  }
 
   /* ---------------- list ---------------- */
   function rowHTML(p) {
     var n = Number(p.comment_count || 0);
+    var notice = isNotice(p);
     return '' +
-      '<div class="post-row" data-post-id="' + p.id + '" role="button" tabindex="0">' +
-        '<div class="line1">' +
-          '<span class="chip ' + (p.category === "rate" ? "economy" : p.category) + '">' + esc(CAT[p.category] || "자유") + '</span>' +
-          '<span class="title">' + esc(p.title) + '</span>' +
-          (n ? '<span class="cmt-n">[' + n + ']</span>' : '') +
-        '</div>' +
-        '<div class="sub">' +
-          '<b>' + esc(p.nickname) + '</b>' +
-          '<span class="time">' + esc(U.relTime(p.created_at)) + '</span>' +
-        '</div>' +
+      '<div class="post-row' + (notice ? " notice" : "") + '" data-post-id="' + p.id + '" role="button" tabindex="0">' +
+        (notice
+          ? '<span class="notice-tag">공지</span>'
+          : '<span class="tag ' + (TAGCLS[p.category] || "free") + '">' + esc(CAT[p.category] || "자유") + '</span>') +
+        '<span class="title">' + esc(p.title) + (n ? ' <span class="cmt-n">[' + n + ']</span>' : '') + '</span>' +
+        '<span class="by">' + esc(p.nickname) + '</span>' +
+        '<span class="date">' + esc(dateText(p.created_at)) + '</span>' +
+        '<span class="meta-m">' + esc(p.nickname) + ' · ' + esc(U.relTime(p.created_at)) + '</span>' +
       '</div>';
   }
 
   function renderList() {
     var list = $("post-list");
     if (!list) return;
-    var rows = state.posts;
+    var all = state.posts || [];
+    var notices = all.filter(isNotice);
+    var rows = all.filter(function (p) { return !isNotice(p); });
     if (state.cat !== "all") {
       rows = rows.filter(function (p) { return p.category === state.cat; });
     }
+    rows = notices.concat(rows);
     list.innerHTML = rows.length
       ? rows.map(rowHTML).join("")
-      : '<div class="empty" style="margin-top:12px">아직 이 말머리에 글이 없습니다.<br>첫 글을 남겨 보세요.</div>';
+      : '<div class="empty"><b>아직 이 말머리에 글이 없습니다.</b>첫 글을 남겨 보세요.</div>';
     var c = $("talk-count");
     if (c) c.textContent = rows.length + "개 글";
   }
@@ -54,9 +71,37 @@
         renderList();
       })
       .catch(function (e) {
-        if (list) list.innerHTML = '<div class="empty">글 목록을 불러오지 못했습니다.<br>' +
-          '<span style="font-size:11.5px;color:#6d7c94">' + esc(U.errMsg(e)) + '</span></div>';
+        if (list) list.innerHTML = '<div class="empty"><b>글 목록을 불러오지 못했습니다.</b>' +
+          '<span style="font-size:11.5px;color:#8B95A1">' + esc(U.errMsg(e)) + '</span></div>';
         var c = $("talk-count"); if (c) c.textContent = "—";
+      });
+  }
+
+  /* ---------------- sidebar: 최신글 ---------------- */
+  function renderSidebar(posts) {
+    var el = $("side-talk");
+    if (!el) return;
+    var rows = (posts || []).slice(0, 5);
+    if (!rows.length) {
+      el.innerHTML = '<li class="empty">아직 글이 없습니다. 첫 글을 남겨 보세요.</li>';
+      return;
+    }
+    el.innerHTML = rows.map(function (p) {
+      var n = Number(p.comment_count || 0);
+      return '<li data-side-post="' + p.id + '" title="' + esc(p.title) + '">' +
+          '<span class="ti">' + esc(p.title) + (n ? ' <b>[' + n + ']</b>' : '') + '</span>' +
+          '<span class="mt"><i>' + esc(isNotice(p) ? "공지" : (CAT[p.category] || "자유")) + '</i>' +
+            esc(p.nickname) + ' · ' + esc(U.relTime(p.created_at)) + '</span>' +
+        '</li>';
+    }).join("");
+  }
+
+  function loadSidebar() {
+    return U.rpc("yp_list_posts", { p_category: "all", p_limit: 5 })
+      .then(renderSidebar)
+      .catch(function () {
+        var el = $("side-talk");
+        if (el) el.innerHTML = '<li class="empty">최신글을 불러오지 못했습니다.</li>';
       });
   }
 
@@ -72,17 +117,18 @@
   function postHTML(data) {
     var p = data.post, cs = data.comments || [];
     return '' +
-      '<div class="post-view">' +
+      '<div class="board post-view">' +
         '<button class="crumb" type="button" data-back-list>← 자유 수다방 목록</button>' +
         '<div class="pv-head">' +
-          '<div class="line1" style="display:flex;align-items:center;gap:6px">' +
-            '<span class="chip ' + (p.category === "rate" ? "economy" : p.category) + '">' + esc(CAT[p.category] || "자유") + '</span>' +
+          '<div class="line1">' +
+            (isNotice(p) ? '<span class="notice-tag">공지</span>'
+                         : '<span class="tag ' + (TAGCLS[p.category] || "free") + '">' + esc(CAT[p.category] || "자유") + '</span>') +
           '</div>' +
           '<h2>' + esc(p.title) + '</h2>' +
           '<div class="pv-meta"><b>' + esc(p.nickname) + '</b><span>' + esc(U.relTime(p.created_at)) + '</span>' +
             '<span style="margin-left:auto;display:flex;gap:9px">' +
               '<button type="button" class="link-btn" data-report="post" data-id="' + p.id + '">신고</button>' +
-              '<button type="button" class="link-btn danger" data-del-post="' + p.id + '">삭제</button>' +
+              (isNotice(p) ? "" : '<button type="button" class="link-btn danger" data-del-post="' + p.id + '">삭제</button>') +
             '</span>' +
           '</div>' +
         '</div>' +
@@ -108,7 +154,7 @@
     U.rpc("yp_get_post", { p_id: Number(id) })
       .then(function (data) {
         if (!data || !data.post) {
-          pv.innerHTML = '<div class="empty">삭제되었거나 없는 글입니다.<br>' +
+          pv.innerHTML = '<div class="empty"><b>삭제되었거나 없는 글입니다.</b>' +
             '<button class="btn" type="button" data-back-list style="margin-top:10px">목록으로</button></div>';
           return;
         }
@@ -120,8 +166,8 @@
         window.scrollTo({ top: 0, behavior: "auto" });
       })
       .catch(function (e) {
-        pv.innerHTML = '<div class="empty">글을 불러오지 못했습니다.<br>' +
-          '<span style="font-size:11.5px;color:#6d7c94">' + esc(U.errMsg(e)) + '</span></div>';
+        pv.innerHTML = '<div class="empty"><b>글을 불러오지 못했습니다.</b>' +
+          '<span style="font-size:11.5px;color:#8B95A1">' + esc(U.errMsg(e)) + '</span></div>';
       });
   }
 
@@ -140,6 +186,7 @@
         history.replaceState(null, "", "#/talk");
         showList();
         loadList();
+        loadSidebar();
       }).catch(function (e) { U.toast(U.errMsg(e), true); });
     });
   }
@@ -192,6 +239,7 @@
       });
       showList();
       loadList();
+      loadSidebar();
       if (r && r.id) openPost(r.id);
     }).catch(function (err) {
       U.toast(U.errMsg(err), true);
@@ -215,6 +263,9 @@
 
     var del = t.closest ? t.closest("[data-del-post]") : null;
     if (del) { deletePost(del.getAttribute("data-del-post")); return; }
+
+    var side = t.closest ? t.closest("[data-side-post]") : null;
+    if (side) { openPost(side.getAttribute("data-side-post")); return; }
 
     var chip = t.closest ? t.closest("#talk-tabs .chip-btn") : null;
     if (chip) {
@@ -251,8 +302,12 @@
     openPost: openPost,
     refreshPost: refreshPost,
     refreshCurrent: refreshCurrent,
-    loadList: loadList
+    loadList: loadList,
+    loadSidebar: loadSidebar
   };
+
+  /* 목록 밖(예: 첫 화면)에서도 사이드 최신글을 먼저 채웁니다. */
+  loadSidebar();
 
   /* app.js가 먼저 실행되면 수다방 초기화를 놓칠 수 있으므로 여기서 한 번 더 확인합니다. */
   var pane = $("pane-talk");

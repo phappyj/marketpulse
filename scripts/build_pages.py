@@ -12,46 +12,53 @@ HEAD = """<!DOCTYPE html>
 <title>{title}</title>
 <meta name="description" content="{desc}">
 <link rel="canonical" href="https://yecheukpan.kr/{slug}">
-<meta name="theme-color" content="#0a0d13">
+<meta name="theme-color" content="#F3F5F8">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="예측판 YECHEUKPAN">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/style.css?v=20261120a">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css?v=20261120h">
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 </head>
 <body>
 
 <header class="site-header">
-  <div class="wrap header-inner">
-    <a class="brand" href="./" aria-label="예측판 홈">
-      <span class="brand-mark" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l6 6 3.5-4 6.5 7"/><path d="M4 4v4h4"/></svg>
-      </span>
-      <span class="brand-text">
-        <span class="brand-name">예측판</span>
-        <span class="brand-sub">Yecheukpan</span>
-      </span>
+  <div class="wrap hd-top">
+    <a class="logo" href="./" aria-label="예측판 홈">
+      <span class="logo-mark" aria-hidden="true">예</span>
+      <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
     </a>
-    <div class="header-meta">
-      <a class="pill" href="./">← 예측판 홈</a>
+    <nav class="hd-tabs" aria-label="예측판 메뉴">
+      <a class="tab" href="./#/live">실시간 예측판</a>
+      <a class="tab" href="./#/talk">자유 수다방</a>
+      <a class="tab" href="./#/guide">이슈 해설</a>
+    </nav>
+    <div class="hd-right">
+      <a class="btn sm" href="./">예측판 홈</a>
     </div>
   </div>
 </header>
 
 <main class="wrap">
   <article class="page">
+    <div class="page-in">
 """
 
-FOOT = """  </article>
+FOOT = """    </div>
+  </article>
 </main>
 
 <footer class="site-footer">
   <div class="wrap footer-inner">
     <div class="footer-top">
       <div class="footer-brand">
+        <a class="logo" href="./">
+          <span class="logo-mark" aria-hidden="true">예</span>
+          <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
+        </a>
         <p>글로벌 예측시장의 공개 확률 데이터를 한국어 해설과 함께 정리하는 정보 커뮤니티입니다.
           베팅·거래·투자 권유를 목적으로 하지 않습니다.</p>
       </div>
@@ -389,25 +396,30 @@ n404 = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>페이지를 찾을 수 없습니다 — 예측판</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0a0d13">
+<meta name="theme-color" content="#F3F5F8">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/style.css?v=20261120a">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css?v=20261120h">
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 </head>
 <body>
 <header class="site-header">
-  <div class="wrap header-inner">
-    <a class="brand" href="./" aria-label="예측판 홈">
-      <span class="brand-mark" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l6 6 3.5-4 6.5 7"/><path d="M4 4v4h4"/></svg>
-      </span>
-      <span class="brand-text"><span class="brand-name">예측판</span><span class="brand-sub">Yecheukpan</span></span>
+  <div class="wrap hd-top">
+    <a class="logo" href="./" aria-label="예측판 홈">
+      <span class="logo-mark" aria-hidden="true">예</span>
+      <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
     </a>
+    <nav class="hd-tabs" aria-label="예측판 메뉴">
+      <a class="tab" href="./#/live">실시간 예측판</a>
+      <a class="tab" href="./#/talk">자유 수다방</a>
+      <a class="tab" href="./#/guide">이슈 해설</a>
+    </nav>
   </div>
 </header>
 <main class="wrap">
   <article class="page">
+    <div class="page-in">
     <h1>페이지를 찾을 수 없습니다</h1>
     <p class="page-meta">404 Not Found</p>
     <p>주소가 바뀌었거나 삭제된 페이지입니다. 아래에서 다시 시작해 보세요.</p>
@@ -416,6 +428,7 @@ n404 = """<!DOCTYPE html>
       <a class="btn" href="./#/talk">자유 수다방</a>
       <a class="btn ghost" href="./#/guide">이슈 해설</a>
     </p>
+    </div>
   </article>
 </main>
 </body>
