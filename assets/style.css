@@ -367,7 +367,7 @@ img, svg { vertical-align: middle; }
 /* ==========================================================================
    이슈 상세 (모달 · 모바일 바텀시트)
    ========================================================================== */
-.modal-ov.dmodal-ov { align-items: center; padding: 20px; }
+.modal-ov.dmodal-ov { align-items: center; padding: 20px; z-index: 85; }
 .dmodal {
   display: flex; flex-direction: column;
   width: 100%; max-width: 620px; max-height: 86vh;
@@ -758,6 +758,8 @@ img, svg { vertical-align: middle; }
 .modal .form { display: grid; gap: 8px; }
 .modal .form .row2 { display: grid; grid-template-columns: 130px 1fr; gap: 8px; }
 .modal .form-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 2px; }
+
+.modal-ov#pw-ov { z-index: 92; }
 
 .toast {
   position: fixed; left: 50%; bottom: 22px; z-index: 95;

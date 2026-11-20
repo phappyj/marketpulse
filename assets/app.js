@@ -692,7 +692,11 @@
   });
 
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { closeModal("pw-ov"); closeModal("compose-ov"); closeDetail(); }
+    if (e.key === "Escape") {
+      if ($("pw-ov") && $("pw-ov").classList.contains("show")) { closeModal("pw-ov"); return; }
+      if ($("compose-ov") && $("compose-ov").classList.contains("show")) { closeModal("compose-ov"); return; }
+      closeDetail();
+    }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "pw-input") {
       e.preventDefault();
       $("pw-confirm").click();
