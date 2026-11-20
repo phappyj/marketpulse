@@ -592,7 +592,7 @@
   document.addEventListener("click", function (e) {
     var t = e.target;
 
-    var vote = t.closest ? t.closest(".vote-btn") : null;
+    var vote = t.closest ? t.closest(".vbtn") : null;
     if (vote) {
       var wrap = vote.closest("[data-vote]");
       if (wrap) castVote(wrap.getAttribute("data-vote"), vote.getAttribute("data-choice"), vote);
