@@ -253,8 +253,9 @@
   }
 
   function load(fresh) {
-    var url = DATA_URL + (fresh ? "?t=" + Date.now() : "");
-    return fetch(url, fresh ? { cache: "no-store" } : undefined)
+    // 데이터는 항상 캐시를 우회해 최신 갱신본을 읽는다(파일 20KB 내외).
+    var url = DATA_URL + "?t=" + Date.now();
+    return fetch(url, fresh ? { cache: "no-store" } : { cache: "no-cache" })
       .then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.json();
