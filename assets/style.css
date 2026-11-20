@@ -215,7 +215,7 @@ img, svg { vertical-align: middle; }
 .top3-num b small { font-size: 11px; margin-left: 1px; }
 .top3-num span { font-size: 10.5px; color: var(--meta); }
 .top3-gauge { margin-top: 5px; }
-.top3-num .gauge { flex: 1 0 100%; }
+.top3-num .gauge { flex: 1 1 100%; max-width: 150px; }
 
 /* ==========================================================================
    게시판 공통 (필터 바·헤더행)
@@ -789,6 +789,8 @@ img, svg { vertical-align: middle; }
   .mrow-p { grid-area: prob; text-align: left; display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 8px; }
   .mrow-p .gauge { margin-top: 0; }
   .mrow-v { grid-area: vote; }
+  .top3-num { width: 104px; margin-left: auto; }
+  .top3-num .gauge { max-width: 104px; margin-left: auto; }
   .mrow-c { grid-area: cmt; }
   .mrow-arrow { display: none; }
   .mrow-sub { display: none; }

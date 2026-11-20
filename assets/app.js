@@ -254,7 +254,7 @@
           '</span>' +
           '<span class="top3-num">' +
             '<b>' + pct(it.yes) + '<small>%</small></b>' +
-            '<span>YES · NO ' + pct(it.no) + '%</span>' +
+            '<span>NO ' + pct(it.no) + '%</span>' +
             '<span class="gauge top3-gauge"><i style="width:' + w + '%"></i></span>' +
           '</span>' +
         '</div>';
@@ -325,7 +325,7 @@
             '<span>24시간 거래량 <b>' + money(it.volume_24h) + '</b></span>' +
             '<span>누적 거래량 <b>' + money(it.volume_total) + '</b></span>' +
             '<span>마감 <b>' + esc(shortDate(it.end_date)) + '</b>' + (daysLeft(it.end_date) ? " · " + daysLeft(it.end_date) : "") + '</span>' +
-            '<span>예측판 여론 <b>' + tot + '명</b> 참여</span>' +
+            '<span>예측판 여론 <b data-vote-total="' + esc(it.key) + '">' + tot + '명</b> 참여</span>' +
           '</div>' +
           '<div class="dgrid">' +
             '<div class="dblock"><h4>이슈 배경</h4><p>' + esc(it.explain) + '</p></div>' +
@@ -443,6 +443,9 @@
     var nodes = document.querySelectorAll('[data-vote="' + key + '"]');
     Array.prototype.forEach.call(nodes, function (node) {
       node.outerHTML = voteHTML(key);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-vote-total="' + key + '"]'), function (el) {
+      el.textContent = voteTotal(key) + "명";
     });
   }
 
