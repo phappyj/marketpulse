@@ -4,7 +4,7 @@
 미국 금리 결정, 비트코인 가격 경로, AI 기업가치, 중동·유럽 지정학 리스크를 카드로 보여주고, 그 위에
 `👍 YES 간다 / 👎 NO 꺾인다` 투표와 자유 수다방을 얹었습니다. 베팅·거래 기능은 제공하지 않습니다.
 
-- 라이브: https://phappyj.github.io/marketpulse/
+- 라이브: https://yecheukpan.kr/
 - 준비 중 도메인: `yecheukpan.kr` (가비아 등록 완료 후 GitHub Pages 커스텀 도메인으로 연결 예정)
 - 호스팅: GitHub Pages (정적) + Supabase (커뮤니티 DB, 서울 리전)
 - 데이터 갱신: GitHub Actions가 **2시간마다** `data/markets.json` 재생성

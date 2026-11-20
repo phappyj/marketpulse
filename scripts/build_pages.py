@@ -11,7 +11,7 @@ HEAD = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{title}</title>
 <meta name="description" content="{desc}">
-<link rel="canonical" href="https://phappyj.github.io/marketpulse/{slug}">
+<link rel="canonical" href="https://yecheukpan.kr/{slug}">
 <meta name="theme-color" content="#0a0d13">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="예측판 YECHEUKPAN">

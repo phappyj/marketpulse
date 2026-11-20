@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://phappyj.github.io/marketpulse/sitemap.xml
+Sitemap: https://yecheukpan.kr/sitemap.xml
