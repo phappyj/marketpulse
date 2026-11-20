@@ -13,6 +13,7 @@ HEAD = """<!DOCTYPE html>
 <meta name="description" content="{desc}">
 <link rel="canonical" href="https://yecheukpan.kr/{slug}">
 <meta name="theme-color" content="#F3F5F8">
+<meta name="google-site-verification" content="ThA5brScxksH1QMuJqSvX_Ec9ifUwkPqka6uS9mI-PQ" />
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="예측판 YECHEUKPAN">
 <meta property="og:title" content="{title}">
