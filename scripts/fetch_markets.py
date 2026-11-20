@@ -153,7 +153,20 @@ WATCH = [
         ),
     ),
     dict(
-        key="fed-hike-hike-hike", cat="economy", rank=3,
+        key="fed-jan-hike", cat="economy", rank=3,
+        q=r"increase interest rates by 25 bps after the January 2027 meeting",
+        title="1월 FOMC, 추가 인상?",
+        explain=(
+            "2027년 1월 회의에서 연준이 기준금리를 0.25%p 더 올릴 확률입니다. 12월 인상이 기정사실화된 "
+            "가운데 시장이 '연속 인상'을 어디까지 보는지 보여주는 지표입니다."
+        ),
+        watch=(
+            "12월 인상 확률(92%대)보다 이 확률이 낮다면, 시장은 12월 이후 한 번 쉬어갈 가능성을 더 크게 "
+            "보고 있다는 뜻입니다."
+        ),
+    ),
+    dict(
+        key="fed-hike-hike-hike", cat="economy", rank=6,
         q=r"Fed hike-hike-hike in the next three decisions",
         title="연준, 12월·1월·3월 연속 인상?",
         explain=(
