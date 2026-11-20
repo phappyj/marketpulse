@@ -846,9 +846,10 @@ img, svg { vertical-align: middle; }
   .top3-item:last-child { border-right: 0; }
   .top3-item .top3-rank { grid-area: rank; text-align: left; }
   .top3-item .top3-body { grid-area: body; }
-  .top3-item .top3-num { grid-area: num; text-align: left; display: flex; align-items: baseline; gap: 6px; margin-top: 5px; }
+  .top3-item .top3-num { grid-area: num; text-align: left; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-top: 5px; }
   .top3-item .top3-num b { font-size: 20px; }
   .top3-item .top3-num span { font-size: 10.5px; }
+  .top3-item .top3-num .gauge { margin-top: 4px; }
   .top3-gauge { margin-top: 6px; }
 }
 

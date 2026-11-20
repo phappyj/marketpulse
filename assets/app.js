@@ -659,7 +659,7 @@
   var TABS = ["live", "talk", "guide"];
   function setTab(name, opts) {
     if (TABS.indexOf(name) === -1) name = "live";
-    Array.prototype.forEach.call(document.querySelectorAll(".tabbar .tab"), function (b) {
+    Array.prototype.forEach.call(document.querySelectorAll(".hd-tabs .tab"), function (b) {
       b.setAttribute("aria-selected", b.getAttribute("data-tab") === name ? "true" : "false");
     });
     TABS.forEach(function (t) {
@@ -685,7 +685,7 @@
   }
 
   document.addEventListener("click", function (e) {
-    var tab = e.target.closest ? e.target.closest(".tabbar .tab") : null;
+    var tab = e.target.closest ? e.target.closest(".hd-tabs .tab") : null;
     if (tab) {
       e.preventDefault();
       setTab(tab.getAttribute("data-tab"));
@@ -733,7 +733,7 @@
     var text = String(label || "—");
     var m = text.match(/(\d+)월 (\d+)일 (\d+:\d+)/);
     var compact = m ? m[1] + "." + m[2] + " " + m[3] : text.replace(/\s*\(KST\)/, "");
-    if (full) full.textContent = text;
+    if (full) full.textContent = m ? (m[1] + "월 " + m[2] + "일 " + m[3]) : text;
     if (short) short.textContent = compact;
   }
 
