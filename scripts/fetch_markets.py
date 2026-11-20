@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-마켓펄스(MarketPulse) 데이터 갱신 스크립트
+예측판(YECHEUKPAN) 데이터 갱신 스크립트
 =========================================
 
 Polymarket의 공개 Gamma API에서 경제·금리, 코인, AI·빅테크, 글로벌 이슈 마켓을
@@ -34,7 +34,7 @@ OUT_PATH = ROOT / "data" / "markets.json"
 KST = timezone(timedelta(hours=9))
 ET = ZoneInfo("America/New_York")   # 예측시장 마감은 미국 동부시간 기준으로 표기한다.
 API = "https://gamma-api.polymarket.com"
-USER_AGENT = "MarketPulseBot/1.0 (Korean prediction-market tracker; contact: site owner)"
+USER_AGENT = "YecheukpanBot/1.0 (Korean prediction-market info site; contact: site owner)"
 
 # 카테고리 정의 (프론트엔드 탭과 1:1 대응)
 CATEGORIES = [
@@ -717,7 +717,7 @@ def build(items: list[dict], pool_size: int) -> dict:
 
     return {
         "schema": 1,
-        "site": "마켓펄스 MarketPulse",
+        "site": "예측판 YECHEUKPAN",
         "updated_at": now.isoformat(timespec="seconds"),
         "updated_at_utc": now.astimezone(timezone.utc).isoformat(timespec="seconds"),
         "updated_label": now.strftime("%Y년 %-m월 %-d일 %H:%M") + " (KST)",
