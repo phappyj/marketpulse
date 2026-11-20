@@ -21,7 +21,7 @@ HEAD = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=20261120m">
+<link rel="stylesheet" href="assets/style.css?v=20261120r">
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 </head>
@@ -104,7 +104,7 @@ ABOUT = """    <h1>서비스 소개</h1>
       <li><strong>24시간·누적 거래량</strong> — 그 확률에 얼마나 많은 돈과 관심이 실렸는지를 보여줍니다. 거래량이 적으면 확률이 쉽게 흔들립니다.</li>
       <li><strong>마감일</strong> — 사건이 판정되는 시점입니다. 미국 동부시간 기준 마감일을 한국어로 표기합니다.</li>
       <li><strong>24시간 변동</strong> — 직전 24시간 동안 확률이 몇 %p 움직였는지 표시합니다.</li>
-      <li><strong>이슈 배경 &amp; 관전 포인트</strong> — 행을 펼치면 왜 이 이슈가 중요한지, 무엇을 보면 좋은지 짧은 해설이 나옵니다.</li>
+      <li><strong>이슈 배경 &amp; 관전 포인트</strong> — 카드를 누르면 왜 이 이슈가 중요한지, 무엇을 보면 좋은지 짧은 해설이 나옵니다.</li>
       <li><strong>한줄 투표 · 댓글</strong> — 이슈마다 <em>👍 YES / 👎 NO</em> 버튼으로 한 번에 의견을 남기고, 근거를 댓글로 나눌 수 있습니다.</li>
     </ul>
 
@@ -112,7 +112,7 @@ ABOUT = """    <h1>서비스 소개</h1>
     <table>
       <thead><tr><th>탭</th><th>내용</th></tr></thead>
       <tbody>
-        <tr><td>실시간 예측판</td><td>오늘의 주요 예측 TOP 3와 전체 이슈 목록. 행마다 시장 확률·한줄 투표·댓글 수가 함께 표시되고, 행을 누르면 해설이 펼쳐집니다.</td></tr>
+        <tr><td>실시간 예측판</td><td>오늘의 주요 예측 TOP 3 하이라이트와 전체 이슈 카드. 카드마다 시장 확률·한줄 투표·댓글 수가 함께 표시되고, 카드를 누르면 거래량·마감일과 해설이 상세 창으로 열립니다.</td></tr>
         <tr><td>자유 수다방</td><td>금리·증시 / 코인 / AI·빅테크 / 자유 말머리로 글과 댓글을 나누는 게시판입니다.</td></tr>
         <tr><td>이슈 해설</td><td>숫자를 읽는 네 가지 규칙, 예측판 여론과 시장 확률의 차이, 커뮤니티 운영 원칙, FAQ.</td></tr>
       </tbody>
@@ -403,7 +403,7 @@ n404 = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=20261120m">
+<link rel="stylesheet" href="assets/style.css?v=20261120r">
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 </head>
