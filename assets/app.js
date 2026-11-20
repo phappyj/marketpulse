@@ -522,8 +522,8 @@
           '<input class="input" name="pw" inputmode="numeric" maxlength="4" placeholder="0000" required></label>' +
         '<label class="field full"><span>댓글</span>' +
           '<textarea class="textarea" name="body" rows="2" maxlength="600" placeholder="짧은 의견을 남겨 주세요 (도배·홍보·욕설은 차단됩니다)" required></textarea></label>' +
-        '<div class="cmt-actions">' +
-          '<button class="btn primary sm" type="submit">댓글 등록</button>' +
+        '<div class="full cmt-actions">' +
+          '<button class="btn primary" type="submit">댓글 등록</button>' +
         '</div>' +
       '</form>';
   }

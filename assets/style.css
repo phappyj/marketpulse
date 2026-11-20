@@ -439,7 +439,9 @@ img, svg { vertical-align: middle; }
 
 .dmodal .cmt-box { margin-top: 14px; }
 .dmodal .cmt-form { grid-template-columns: 1fr 1fr; }
-.cmt-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 6px; }
+.cmt-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.dmodal .cmt-actions { grid-column: 1 / -1; }
+.dmodal .cmt-actions .btn { padding: 7px 14px; }
 
 /* ==========================================================================
    댓글
