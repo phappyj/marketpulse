@@ -367,7 +367,8 @@ declare v_hash text;
 begin
   select pw_hash into v_hash from public.yp_comments where id = p_id;
   if v_hash is null then raise exception 'not_found'; end if;
-  if v_hash <> extensions.crypt(p_pw, v_hash) then raise exception 'bad_pw'; end if;
+  if p_pw !~ '^[0-9]{4}$' then raise exception 'bad_pw'; end if;
+  if v_hash <> extensions.crypt(p_pw, v_hash) then raise exception 'wrong_pw'; end if;
   delete from public.yp_comments where id = p_id;
   return jsonb_build_object('ok', true);
 end $$;
@@ -380,7 +381,8 @@ declare v_hash text;
 begin
   select pw_hash into v_hash from public.yp_posts where id = p_id;
   if v_hash is null then raise exception 'not_found'; end if;
-  if v_hash <> extensions.crypt(p_pw, v_hash) then raise exception 'bad_pw'; end if;
+  if p_pw !~ '^[0-9]{4}$' then raise exception 'bad_pw'; end if;
+  if v_hash <> extensions.crypt(p_pw, v_hash) then raise exception 'wrong_pw'; end if;
   delete from public.yp_posts where id = p_id;
   return jsonb_build_object('ok', true);
 end $$;

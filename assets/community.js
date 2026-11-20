@@ -148,6 +148,8 @@
   function openCompose() {
     var ov = $("compose-ov");
     if (!ov) return;
+    var nickInput = $("pf-nick");
+    if (nickInput && !nickInput.value) nickInput.value = U.nick ? U.nick() : "";
     ov.classList.add("show");
     setTimeout(function () { var t = $("pf-title"); if (t) t.focus(); }, 60);
   }
@@ -179,6 +181,7 @@
       p_nickname: nick, p_pw: pw, p_client: U.clientId
     }).then(function (r) {
       U.markWrite("post");
+      if (U.setNick) U.setNick(nick);
       U.closeModal("compose-ov");
       $("compose-form").reset();
       U.toast("글을 등록했습니다.");

@@ -46,6 +46,7 @@
     rate_limited: "잠시 후 다시 시도해 주세요. (1시간 작성 한도)",
     banned: "금칙어가 포함되어 등록할 수 없습니다. (도박·홍보·욕설)",
     bad_pw: "비밀번호는 숫자 4자리입니다.",
+    wrong_pw: "비밀번호가 맞지 않습니다. 작성할 때 입력한 4자리를 확인해 주세요.",
     bad_choice: "투표 값을 확인해 주세요.",
     bad_issue: "이슈 정보를 확인하지 못했습니다.",
     bad_kind: "신고 대상을 확인하지 못했습니다.",
@@ -82,6 +83,9 @@
     }
     return null;
   }
+
+  function nick() { return lsGet("yp_nick") || ""; }
+  function setNick(v) { if (v) lsSet("yp_nick", String(v).slice(0, 16)); }
 
   var COOLDOWN_MS = 15000;
   function cooldownLeft(bucket) {
@@ -299,7 +303,7 @@
     return '' +
       '<form class="cmt-form" data-cmt-form="' + kind + '" data-target="' + esc(targetId) + '" autocomplete="off">' +
         '<label class="field"><span>닉네임</span>' +
-          '<input class="input" name="nick" maxlength="16" placeholder="닉네임" required></label>' +
+          '<input class="input" name="nick" maxlength="16" placeholder="닉네임" value="' + esc(nick()) + '" required></label>' +
         '<label class="field"><span>비밀번호 4자리</span>' +
           '<input class="input" name="pw" inputmode="numeric" maxlength="4" placeholder="0000" required></label>' +
         '<label class="field full"><span>댓글</span>' +
@@ -479,6 +483,7 @@
 
     rpc(fn, args).then(function () {
       markWrite("comment");
+      setNick(nick);
       form.body.value = "";
       toast("댓글을 등록했습니다.");
       if (kind === "issue") {
@@ -746,6 +751,7 @@
     clientId: CLIENT_ID, askPassword: askPassword, closeModal: closeModal,
     findBanned: findBanned, cooldownLeft: cooldownLeft, markWrite: markWrite,
     setTab: setTab, cmtFormHTML: cmtFormHTML, cmtHTML: cmtHTML,
+    nick: nick, setNick: setNick,
     loadComments: loadComments, submitComment: submitComment,
     deleteComment: deleteComment, reportTarget: reportTarget, uid: uid
   };
