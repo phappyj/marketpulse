@@ -19,6 +19,8 @@ HEAD = """<!DOCTYPE html>
 <meta property="og:description" content="{desc}">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css?v=20261120a">
+<!-- Google AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -181,7 +183,8 @@ PRIVACY = """    <h1>개인정보처리방침</h1>
     </table>
 
     <h2>2. 브라우저 저장소(쿠키·로컬스토리지)</h2>
-    <p>사이트는 광고·추적 쿠키를 사용하지 않습니다. 다만 중복 투표 방지와 도배 방지를 위해
+    <p>사이트 자체는 추적 쿠키를 사용하지 않습니다. 다만 광고 게재를 위해 Google AdSense가 쿠키를 사용할 수 있습니다(8항 참고).
+      중복 투표 방지와 도배 방지를 위해
       <strong>무작위 식별값</strong>을 브라우저의 로컬스토리지에 저장합니다. 이 값은 이름·이메일과 연결되지 않으며,
       브라우저 저장소를 지우면 새 값이 생성됩니다. 저장소를 차단하면 투표·댓글 작성이 제한될 수 있습니다.</p>
 
@@ -212,8 +215,12 @@ PRIVACY = """    <h1>개인정보처리방침</h1>
       정책을 적용해, 공개 키만으로는 비밀번호 해시를 읽거나 다른 사람의 글을 수정할 수 없습니다.</p>
 
     <h2>8. 제3자 광고 및 통계 도구</h2>
-    <p>현재 사이트는 제3자 광고나 추적 도구를 사용하지 않습니다. 향후 도입할 경우 본 방침을 갱신해 안내하고,
-      맞춤 광고 해제 방법을 함께 안내합니다.</p>
+    <p>사이트는 Google AdSense를 통해 광고를 게재합니다. Google은 제3자 공급업체로서 쿠키를 사용해 이용자가 이 사이트나
+      다른 사이트를 방문한 기록을 바탕으로 광고를 표시할 수 있습니다. 맞춤 광고는
+      <a href="https://adssettings.google.com" rel="noopener">Google 광고 설정</a> 또는
+      <a href="https://www.aboutads.info" rel="noopener">www.aboutads.info</a>에서 해제할 수 있으며,
+      Google의 광고 쿠키 사용에 대한 자세한 내용은 Google 광고 정책 페이지에서 확인할 수 있습니다.
+      이 밖에 사이트가 직접 운영하는 통계·추적 도구는 사용하지 않습니다.</p>
 
     <h2>9. 방침의 변경</h2>
     <p>본 방침이 변경되는 경우 이 페이지에 변경 내용과 시행일을 게시합니다.</p>
@@ -385,6 +392,8 @@ n404 = """<!DOCTYPE html>
 <meta name="theme-color" content="#0a0d13">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css?v=20261120a">
+<!-- Google AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 </head>
 <body>
 <header class="site-header">
