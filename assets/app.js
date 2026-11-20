@@ -1118,13 +1118,8 @@
         // 페이지를 다시 불러오지 않고 실시간 API만 재조회합니다.
         liveRefresh(true).then(function (ok) {
           if (ok) { toast("실시간 확률로 갱신했습니다"); return; }
-          // 실시간 API가 막혔을 때만 저장된 데이터로 조용히 대체합니다.
-          return loadData(true).then(function () {
-            toast("실시간 연결이 지연돼 저장된 확률로 갱신했습니다", true);
-          }, function (e) {
-            console.warn(e);
-            toast("갱신하지 못했습니다 · 잠시 후 다시 시도해 주세요", true);
-          });
+          // 실패해도 이미 보고 있는 값을 바꾸지 않습니다(더 낡은 저장값으로 되돌리지 않음).
+          toast("실시간 연결이 지연되고 있어요 · 표시된 값을 그대로 둡니다", true);
         }).then(function () { btn.classList.remove("spinning"); });
       });
     }
