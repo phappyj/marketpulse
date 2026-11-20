@@ -189,7 +189,7 @@
       var n = cat === "all" ? items.length : items.filter(function (i) { return i.category === cat; }).length;
       var base = tab.getAttribute("data-label") || tab.textContent.replace(/\s\d+$/, "");
       tab.setAttribute("data-label", base);
-      tab.innerHTML = esc(base) + '<span class="n">' + n + "</span>";
+      tab.innerHTML = esc(base) + ' <span class="n">' + n + "</span>";
     });
   }
 
@@ -244,7 +244,12 @@
 
   /* ---------- load ---------- */
   function setStamp(label) {
-    if (elStamp) elStamp.textContent = label;
+    if (!elStamp) return;
+    var text = String(label || "—");
+    var m = text.match(/(\d+)월 (\d+)일 (\d+:\d+)/);
+    var short = m ? m[1] + "." + m[2] + " " + m[3] : text.replace(/\s*\(KST\)/, "");
+    elStamp.innerHTML = '<span class="stamp-full">' + esc(text) + '</span>' +
+                        '<span class="stamp-short">' + esc(short) + '</span>';
   }
 
   function load(fresh) {

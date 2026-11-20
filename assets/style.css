@@ -414,7 +414,7 @@ a:hover { text-decoration: underline; }
   border-radius: 999px;
   transition: width .5s cubic-bezier(.22, .61, .36, 1);
 }
-.bar.flat i { background: linear-gradient(90deg, #94a3b8, #64748b); }
+.bar.flat i { background: linear-gradient(90deg, #60a5fa, #2563eb); }
 
 .meta {
   display: flex; flex-wrap: wrap; gap: 4px 12px;
@@ -591,4 +591,24 @@ a:hover { text-decoration: underline; }
 /* mobile-only line break in hero */
 @media (min-width: 620px) {
   .mobile-only { display: none; }
+}
+
+/* ---------- v1.1 미세 조정 ---------- */
+.stamp { max-width: 62vw; overflow: hidden; text-overflow: ellipsis; }
+.stamp-short { display: none; }
+.section-head h2 { white-space: nowrap; }
+
+@media (max-width: 560px) {
+  .header-inner { height: 56px; gap: 8px; }
+  .brand-sub { display: none; }
+  .stamp { font-size: 11px; padding: 5px 9px 5px 8px; max-width: 58vw; }
+  .stamp-full { display: none; }
+  .stamp-short { display: inline; }
+  .section-head { margin: 28px 0 12px; }
+  .section-head .hint { display: none; }
+  .hero { padding: 24px 0 4px; }
+  .hero h1 { font-size: 25px; }
+  .hero p { font-size: 14px; }
+  .feature h3 { font-size: 16px; }
+  .feature-num .big { font-size: 38px; }
 }
