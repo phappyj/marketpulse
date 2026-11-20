@@ -846,7 +846,7 @@ img, svg { vertical-align: middle; }
   .pgrid { gap: 10px; }
   .pcard { padding: 12px 13px 12px; }
   .pcard-t { font-size: 15.5px; margin-top: 7px; }
-  .pcard-prob { margin-top: 9px; }
+  .pcard-prob { margin-top: 10px; padding-top: 0; }
   .pcard-pv { font-size: 29px; }
   .pcard-pv small { font-size: 14px; }
   .pcard-foot { margin-top: 10px; }
