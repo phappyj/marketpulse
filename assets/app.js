@@ -559,7 +559,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-cmt-count="' + key + '"], [data-cmt-count2="' + key + '"]'), function (el) {
       el.textContent = n;
       var chip = el.closest ? el.closest(".pcard-cmt") : null;
-      if (chip) { if (n > 0) chip.classList.add("has"); else chip.classList.remove("has"); }
+      if (chip) {
+        if (n > 0) chip.classList.add("has"); else chip.classList.remove("has");
+        chip.setAttribute("aria-label", "이슈 댓글 " + n + "개 보기");
+      }
     });
   }
 
@@ -839,7 +842,10 @@
         var k = el.getAttribute("data-cmt-count");
         el.textContent = state.cmtCount[k] || 0;
         var chip = el.closest ? el.closest(".pcard-cmt") : null;
-        if (chip) { if (state.cmtCount[k] > 0) chip.classList.add("has"); else chip.classList.remove("has"); }
+        if (chip) {
+          if (state.cmtCount[k] > 0) chip.classList.add("has"); else chip.classList.remove("has");
+          chip.setAttribute("aria-label", "이슈 댓글 " + (state.cmtCount[k] || 0) + "개 보기");
+        }
       });
     }).catch(function () { /* counts are optional */ });
   }
