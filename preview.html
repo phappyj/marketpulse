@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>미리보기 · 마켓펄스</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #dbe3ee; }
+  iframe { display: block; border: 0; background: #fff; margin: 0; }
+</style>
+</head>
+<body>
+<iframe id="frame" title="마켓펄스 미리보기"></iframe>
+<script>
+  var p = new URLSearchParams(location.search);
+  var w = parseInt(p.get("w") || "390", 10);
+  var h = parseInt(p.get("h") || "1200", 10);
+  var hash = p.get("hash") || "";
+  var f = document.getElementById("frame");
+  f.width = w;
+  f.height = h;
+  f.src = "./?v=" + Date.now() + (hash ? "#" + hash : "");
+</script>
+</body>
+</html>
