@@ -17,6 +17,16 @@
 
   function isNotice(p) { return p && (p.nickname === "예측판" || String(p.id) === "1"); }
 
+  function fmtViews(v) {
+    var n = Number(v || 0);
+    if (!isFinite(n) || n < 0) n = 0;
+    return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function ssSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+  function ssDel(k) { try { sessionStorage.removeItem(k); } catch (e) { /* ignore */ } }
+
   function dateText(iso) {
     var d = new Date(iso);
     if (isNaN(d.getTime())) return "";
@@ -39,9 +49,11 @@
           ? '<span class="notice-tag">공지</span>'
           : '<span class="tag ' + (TAGCLS[p.category] || "free") + '">' + esc(CAT[p.category] || "자유") + '</span>') +
         '<span class="title">' + esc(p.title) + (n ? ' <span class="cmt-n">[' + n + ']</span>' : '') + '</span>' +
+        '<span class="views" data-views-for="' + p.id + '">' + esc(fmtViews(p.views)) + '</span>' +
         '<span class="by">' + esc(p.nickname) + '</span>' +
         '<span class="date">' + esc(dateText(p.created_at)) + '</span>' +
-        '<span class="meta-m">' + esc(p.nickname) + ' · ' + esc(U.relTime(p.created_at)) + '</span>' +
+        '<span class="meta-m">' + esc(p.nickname) + ' · ' + esc(U.relTime(p.created_at)) +
+          ' · 조회 <b data-views-for="' + p.id + '">' + esc(fmtViews(p.views)) + '</b></span>' +
       '</div>';
   }
 
@@ -91,7 +103,7 @@
       return '<li data-side-post="' + p.id + '" title="' + esc(p.title) + '">' +
           '<span class="ti">' + esc(p.title) + (n ? ' <b>[' + n + ']</b>' : '') + '</span>' +
           '<span class="mt"><i>' + esc(isNotice(p) ? "공지" : (CAT[p.category] || "자유")) + '</i>' +
-            esc(p.nickname) + ' · ' + esc(U.relTime(p.created_at)) + '</span>' +
+            esc(p.nickname) + ' · ' + esc(U.relTime(p.created_at)) + ' · 조회 ' + esc(fmtViews(p.views)) + '</span>' +
         '</li>';
     }).join("");
   }
@@ -126,6 +138,7 @@
           '</div>' +
           '<h2>' + esc(p.title) + '</h2>' +
           '<div class="pv-meta"><b>' + esc(p.nickname) + '</b><span>' + esc(U.relTime(p.created_at)) + '</span>' +
+            '<span class="pv-v">👁 조회 <b data-pv-views="' + p.id + '">' + esc(fmtViews(p.views)) + '</b></span>' +
             '<span style="margin-left:auto;display:flex;gap:9px">' +
               '<button type="button" class="link-btn" data-report="post" data-id="' + p.id + '">신고</button>' +
               (isNotice(p) ? "" : '<button type="button" class="link-btn danger" data-del-post="' + p.id + '">삭제</button>') +
@@ -159,6 +172,7 @@
           return;
         }
         pv.innerHTML = postHTML(data);
+        trackPostView(id, data.post);
         if (!opts || !opts.fromHash) {
           var hash = "#/talk/post/" + id;
           if (location.hash !== hash) history.replaceState(null, "", hash);
@@ -168,6 +182,35 @@
       .catch(function (e) {
         pv.innerHTML = '<div class="empty"><b>글을 불러오지 못했습니다.</b>' +
           '<span style="font-size:11.5px;color:#8B95A1">' + esc(U.errMsg(e)) + '</span></div>';
+      });
+  }
+
+  /* 조회수: 글을 열 때 1회 집계(같은 브라우저·같은 날 1회, 서버에서도 중복 차단) */
+  function trackPostView(id, post) {
+    var key = String(id);
+    var mark = "yp_v_post_" + key;
+    var seen = !!ssGet(mark);
+    var paint = function (v) {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-views-for="' + key + '"]'), function (el) {
+        el.textContent = fmtViews(v);
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-pv-views="' + key + '"]'), function (el) {
+        el.textContent = fmtViews(v);
+      });
+      for (var i = 0; i < state.posts.length; i++) {
+        if (String(state.posts[i].id) === key) state.posts[i].views = Number(v || 0);
+      }
+    };
+    if (seen) return;
+    ssSet(mark, "1");
+    U.rpc("yp_track_view", { p_kind: "post", p_key: key, p_viewer: U.clientId })
+      .then(function (r) {
+        if (!r) return;
+        paint(r.views);
+      })
+      .catch(function () {
+        ssDel(mark);
+        if (post) paint(post.views);
       });
   }
 

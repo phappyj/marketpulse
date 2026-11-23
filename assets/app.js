@@ -169,7 +169,8 @@
     tally: {},      // issue_key -> {yes, no}
     mine: {},       // issue_key -> 'yes'|'no'
     cmtCount: {},   // issue_key -> n
-    cmtRows: {}     // issue_key -> rows | null(미로드)
+    cmtRows: {},    // issue_key -> rows | null(미로드)
+    issueViews: {}  // issue_key -> 조회(클릭) 수
   };
 
   var CAT_LABEL = { economy: "경제·금리", crypto: "코인·금융", ai: "AI·테크", global: "글로벌" };
@@ -314,6 +315,11 @@
       'aria-label="이슈 댓글 ' + n + '개 보기" title="이슈 댓글 보기">💬 <b data-cmt-count="' + esc(key) + '">' + n + '</b></button>';
   }
 
+  function viewChip(key) {
+    var n = state.issueViews[key] || 0;
+    return '<span class="pcard-views" title="이슈 조회 수">👁 <b data-issue-views="' + esc(key) + '">' + n + '</b></span>';
+  }
+
   function cardHTML(it) {
     var yes = Math.max(0, Math.min(100, Number(it.yes) || 0));
     var dl = daysLeft(it.end_date);
@@ -321,7 +327,7 @@
     return '' +
       '<article class="pcard" data-key="' + esc(it.key) + '" data-cat="' + esc(it.category) + '">' +
         '<div class="pcard-hit" role="button" tabindex="0" data-expand="' + esc(it.key) + '" aria-haspopup="dialog" aria-expanded="false" aria-label="' + esc(it.title) + ' 상세 보기">' +
-          '<div class="pcard-top">' + ctag(it.category) + deltaChip(it.change_24h) + cmtChip(it.key) + '</div>' +
+          '<div class="pcard-top">' + ctag(it.category) + deltaChip(it.change_24h) + viewChip(it.key) + cmtChip(it.key) + '</div>' +
           '<h3 class="pcard-t">' + esc(it.title) + '</h3>' +
           '<div class="pcard-glob">' +
             LB_GLOBAL +
@@ -395,6 +401,7 @@
         '<li>마감 <b>' + esc(shortDate(it.end_date)) + (dl ? ' · ' + esc(dl) : '') + '</b></li>' +
         '<li>최근 1주 변동 <b class="' + (Number(it.change_1w) < 0 ? 'down' : 'up') + '">' +
           (Number(it.change_1w) > 0 ? '+' : '') + pct(it.change_1w) + 'p</b></li>' +
+        '<li>조회 <b data-issue-views="' + esc(it.key) + '">' + (state.issueViews[it.key] || 0) + '</b></li>' +
       '</ul>' +
       '<div class="dd-vote">' +
         '<div class="vote-hd">' + LB_USER +
@@ -439,6 +446,7 @@
     var hit = document.querySelector('.pcard[data-key="' + key + '"] .pcard-hit');
     if (hit) hit.setAttribute("aria-expanded", "true");
 
+    trackIssueView(key);
     renderComments(key);
 
     var x = document.querySelector("#detail-ov .x");
@@ -1108,6 +1116,43 @@
     }).catch(function () { /* counts are optional */ });
   }
 
+  /* ---------------- 조회수(클릭수) ---------------- */
+  function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function ssSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+  function ssDel(k) { try { sessionStorage.removeItem(k); } catch (e) { /* ignore */ } }
+
+  function paintIssueViews() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-issue-views]"), function (el) {
+      var k = el.getAttribute("data-issue-views");
+      el.textContent = state.issueViews[k] || 0;
+    });
+  }
+
+  function loadIssueViews() {
+    var keys = ((state.data && state.data.items) || []).map(function (i) { return i.key; });
+    if (!keys.length) return Promise.resolve();
+    return rpc("yp_issue_view_counts", { p_keys: keys }).then(function (rows) {
+      (rows || []).forEach(function (r) {
+        state.issueViews[r.issue_key] = Number(r.views || 0);
+      });
+      paintIssueViews();
+    }).catch(function () { /* 조회수는 없어도 화면은 동작 */ });
+  }
+
+  // 이슈 카드를 열 때 1회만 집계(같은 브라우저·같은 날 1회, 서버에서도 중복 차단)
+  function trackIssueView(key) {
+    var mark = "yp_v_issue_" + key;
+    if (ssGet(mark)) return;
+    ssSet(mark, "1");
+    rpc("yp_track_view", { p_kind: "issue", p_key: String(key), p_viewer: CLIENT_ID })
+      .then(function (r) {
+        if (!r) return;
+        state.issueViews[key] = Number(r.views || 0);
+        paintIssueViews();
+      })
+      .catch(function () { ssDel(mark); });
+  }
+
   function errorState(err) {
     console.error(err);
     setStamp("불러오기 실패");
@@ -1141,7 +1186,7 @@
       .then(function () {
         return loadVotes().then(function () {
           renderFeatured(); renderCards(); return loadCommentCounts();
-        });
+        }).then(loadIssueViews);
       })
       .then(function () {
         liveRefresh();     // 저장 데이터로 그린 직후, 곧바로 실시간 값으로 덮어씁니다.
