@@ -19,7 +19,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import subprocess
 import sys
 import time
 import urllib.error
@@ -792,6 +794,33 @@ def build(items: list[dict], pool_size: int) -> dict:
     }
 
 
+def build_static_pages() -> None:
+    """데이터를 저장한 뒤 이슈별 정적 페이지와 sitemap.xml을 다시 만든다.
+
+    GitHub Actions에서는 다음 커밋 단계가 생성물을 함께 실을 수 있도록 스테이징까지 한다.
+    (워크플로우 파일을 고치지 않고도 매 갱신마다 페이지가 최신으로 유지된다.)
+    """
+    script = Path(__file__).resolve().parent / "build_issue_pages.py"
+    if not script.exists():
+        print("  · 이슈 페이지 생성 스크립트가 없어 건너뜁니다.", file=sys.stderr)
+        return
+    try:
+        r = subprocess.run([sys.executable, str(script)], cwd=str(ROOT))
+        if r.returncode != 0:
+            print(f"  ! 이슈 페이지 생성 실패(코드 {r.returncode}) — 데이터만 갱신합니다.", file=sys.stderr)
+            return
+    except OSError as e:
+        print(f"  ! 이슈 페이지 생성 실패: {e}", file=sys.stderr)
+        return
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        try:
+            subprocess.run(["git", "add", "-A", "issues", "sitemap.xml", "data/markets.json"],
+                           cwd=str(ROOT), check=True)
+            print("  · 생성물 스테이징 완료(issues/, sitemap.xml)")
+        except (OSError, subprocess.CalledProcessError) as e:
+            print(f"  ! git add 실패: {e}", file=sys.stderr)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="파일을 쓰지 않고 결과만 출력")
@@ -851,6 +880,9 @@ def main() -> int:
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     tmp.replace(OUT_PATH)
     print(f"  → {OUT_PATH.relative_to(ROOT)} 저장 완료")
+
+    print("[5/5] 이슈별 정적 페이지 · sitemap.xml 생성")
+    build_static_pages()
     return 0
 
 

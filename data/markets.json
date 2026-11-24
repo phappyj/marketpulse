@@ -1,9 +1,9 @@
 {
  "schema": 1,
  "site": "예측판 YECHEUKPAN",
- "updated_at": "2026-11-24T09:31:45+09:00",
- "updated_at_utc": "2026-11-24T00:31:45+00:00",
- "updated_label": "2026년 11월 24일 09:31 (KST)",
+ "updated_at": "2026-11-24T09:33:12+09:00",
+ "updated_at_utc": "2026-11-24T00:33:12+00:00",
+ "updated_label": "2026년 11월 24일 09:33 (KST)",
  "source": "Polymarket Gamma 공개 API",
  "source_note": "글로벌 예측시장의 공개 확률 데이터를 한국어로 정리했습니다. 베팅·거래 기능은 제공하지 않습니다.",
  "pool_size": 2258,
