@@ -814,7 +814,9 @@ def build_static_pages() -> None:
         return
     if os.environ.get("GITHUB_ACTIONS") == "true":
         try:
-            subprocess.run(["git", "add", "-A", "issues", "sitemap.xml", "data/markets.json"],
+            # data/markets.json 은 일부러 스테이징하지 않는다. 워크플로우가 그 파일의
+            # 변경 여부로 커밋 여부를 판단하므로, 미리 stage 하면 '변경 없음'으로 조기 종료된다.
+            subprocess.run(["git", "add", "-A", "issues", "sitemap.xml"],
                            cwd=str(ROOT), check=True)
             print("  · 생성물 스테이징 완료(issues/, sitemap.xml)")
         except (OSError, subprocess.CalledProcessError) as e:
