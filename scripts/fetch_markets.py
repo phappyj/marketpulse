@@ -10,6 +10,8 @@ Polymarket의 공개 Gamma API에서 경제·금리, 코인, AI·빅테크, 글�
 - 표준 라이브러리만 사용한다(서버·유료 API 없음, GitHub Actions에서 무료 실행).
 - 큐레이션 규칙(WATCH)에 매칭되는 마켓을 우선 채우고, 매칭이 모자라면
   자동 선별(auto) 항목으로 최소 8개까지 채운다.
+- 사생활·성추문·불륜·가십성 스캔들 표현이 있는 마켓은 후보 단계에서 버린다
+  (scripts/content_filter.py — 애드센스 정책·명예훼손 리스크).
 - 새로 만든 항목이 8개 미만이면 기존 파일을 덮어쓰지 않는다(사이트 보호).
 
 사용법:  python3 scripts/fetch_markets.py [--dry-run]
@@ -58,6 +60,14 @@ KOREA_BLOCK = re.compile(
     r"national\s+assembly\s+of\s+korea|\bwon\s+usd\b|bank\s+of\s+korea)",
     re.I,
 )
+
+# 사생활·성추문·가십성 스캔들 표현은 싣지 않는다(애드센스 정책·명예훼손 리스크).
+# 규칙 본문은 scripts/content_filter.py 에 있고, 이슈 페이지 생성 스크립트도 같은 기준을 쓴다.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from content_filter import blocked_reason, is_blocked  # noqa: E402
+
+# 필터에 걸러진 마켓 수(실행 로그로 남긴다).
+GOSSIP_DROPPED: list[str] = []
 
 # 자동 선별에서 제외할 스포츠·연예·SNS 잡음
 NOISE_BLOCK = re.compile(
@@ -552,6 +562,12 @@ def build_pool(events_per_tag: int = 45) -> dict:
                     continue
                 if KOREA_BLOCK.search(row["question"]) or KOREA_BLOCK.search(row["event_title"]):
                     continue
+                gossip = blocked_reason(row["question"], row["event_title"])
+                if gossip:
+                    if row["question"] not in GOSSIP_DROPPED:
+                        GOSSIP_DROPPED.append(row["question"])
+                        print(f"  · 가쉽·스캔들 제외('{gossip}'): {row['question'][:80]}")
+                    continue
                 prev = pool.get(row["mid"])
                 if prev is None:
                     row["tags"] = sorted(set(row["tags"] + [tag]))
@@ -572,6 +588,8 @@ def find_market(pool: dict, rule: dict) -> dict | None:
         if not pattern.search(row["question"]):
             continue
         if not_pattern and not_pattern.search(row["question"]):
+            continue
+        if is_blocked(row["question"], row["event_title"]):
             continue
         if rule.get("option") and not re.search(rule["option"], row["option"], re.I):
             continue
@@ -617,6 +635,10 @@ def kdate(text: str) -> str:
         rep, out, flags=re.I)
     # 'by 2026년 12월 31일' 처럼 한국어 날짜 앞에 남은 전치사를 거둔다.
     out = re.sub(r"\s+by\s+(?=\d{4}년)", " ", out)
+    # 날짜 없이 홀로 남은 월 이름('in November')도 한국어로 바꾼다.
+    out = re.sub(
+        r"\b(January|February|March|April|May|June|July|August|September|October|November|December)\b",
+        lambda m: f"{MONTH_KO[m.group(1).lower()]}월", out, flags=re.I)
     return out
 
 
@@ -684,7 +706,9 @@ def pick_auto(pool: dict, cat: str, used: set[str]) -> dict | None:
     """카테고리 태그가 맞고 잡음이 아닌 마켓 중 거래량이 큰 것 하나."""
     tag_map = {
         "economy": {"economy", "fed", "macro", "finance"},
-        "crypto": {"crypto", "finance"},
+        # 'finance' 공통 태그만 달린 마켓(예: CEO 거취)이 코인 탭에 오지 않도록
+        # 코인 탭은 실제 코인 자산 태그만 받는다.
+        "crypto": {"crypto", "bitcoin", "ethereum", "crypto-prices"},
         "ai": {"ai", "tech", "big-tech", "business"},
         "global": {"geopolitics", "world", "politics"},
     }[cat]
@@ -695,6 +719,8 @@ def pick_auto(pool: dict, cat: str, used: set[str]) -> dict | None:
         if not (set(row["tags"]) & tag_map):
             continue
         if NOISE_BLOCK.search(row["question"]) or NOISE_BLOCK.search(row["event_title"]):
+            continue
+        if is_blocked(row["question"], row["event_title"]):
             continue
         if row["yes"] < 0.02 or row["yes"] > 0.98:
             continue
@@ -864,6 +890,17 @@ def main() -> int:
             items.append(build_auto(row, cat["id"]))
             used.add(row["mid"])
             have += 1
+
+    # 마지막 안전망 — 카드 제목·해설까지 포함해 한 번 더 검사한다.
+    kept = []
+    for it in items:
+        reason = blocked_reason(it.get("title", ""), it.get("question", ""),
+                                it.get("event_title", ""))
+        if reason:
+            print(f"  · 가쉽·스캔들 제외('{reason}'): {it.get('key')} — {it.get('title')}", file=sys.stderr)
+            continue
+        kept.append(it)
+    items = kept
 
     if len(items) < MIN_ITEMS:
         print(f"! 새 항목이 {len(items)}개뿐입니다(최소 {MIN_ITEMS}). 기존 파일을 유지합니다.",

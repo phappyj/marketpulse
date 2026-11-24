@@ -24,9 +24,14 @@ import html
 import json
 import pathlib
 import re
+import sys
 from datetime import date, datetime
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+# 사생활·성추문·가십성 스캔들 필터(scripts/content_filter.py) — 수집 스크립트와 같은 기준.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from content_filter import blocked_reason  # noqa: E402
 DATA_PATH = ROOT / "data" / "markets.json"
 ISSUES_DIR = ROOT / "issues"
 SITEMAP_PATH = ROOT / "sitemap.xml"
@@ -644,6 +649,21 @@ def main() -> int:
     items = [x for x in (data.get("items") or []) if x.get("key")]
     if not items:
         print("! markets.json 에 이슈가 없습니다. 아무것도 만들지 않습니다.", flush=True)
+        return 1
+
+    # 데이터가 오래됐을 때를 대비한 안전망 — 사생활·가십 항목은 페이지·사이트맵에서 뺀다.
+    # 목록에서 빠지면 아래 '사라진 이슈 페이지 정리'가 해당 HTML도 지운다.
+    clean = []
+    for it in items:
+        reason = blocked_reason(it.get("title", ""), it.get("question", ""),
+                                it.get("event_title", ""))
+        if reason:
+            print(f"  · 가쉽·스캔들 제외('{reason}'): {it.get('key')} — {it.get('title')}")
+            continue
+        clean.append(it)
+    items = clean
+    if not items:
+        print("! 필터를 지나 남은 이슈가 없습니다. 아무것도 만들지 않습니다.", flush=True)
         return 1
 
     order = {c: i for i, c in enumerate(CAT_ORDER)}
