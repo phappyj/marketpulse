@@ -71,7 +71,9 @@ GLOSSARY = [
     (r"\bBitcoin\b", "비트코인"), (r"\bBTC\b", "비트코인"), (r"\bEthereum\b", "이더리움"),
     (r"\bETH\b", "이더리움"), (r"\bSolana\b", "솔라나"), (r"\bSatoshi\b", "사토시"),
     (r"\bthe Fed\b", "연준"), (r"\bFed\b", "연준"), (r"\bFOMC\b", "FOMC"),
-    (r"\bNVIDIA\b", "엔비디아"), (r"\bNvidia\b", "엔비디아"), (r"\bApple\b", "애플"),
+    (r"\bNVIDIA\b", "엔비디아"), (r"\bNvidia\b", "엔비디아"), (r"\bJensen Huang\b", "젠슨 황"),
+    (r"\bJerome Powell\b", "제롬 파월"), (r"\bElon Musk\b", "일론 머스크"), (r"\bSam Altman\b", "샘 올트먼"),
+    (r"\bApple\b", "애플"),
     (r"\bMicrosoft\b", "마이크로소프트"), (r"\bGoogle\b", "구글"), (r"\bAlphabet\b", "알파벳"),
     (r"\bAmazon\b", "아마존"), (r"\bMeta\b", "메타"), (r"\bTesla\b", "테슬라"),
     (r"\bOpenAI\b", "오픈AI"), (r"\bAnthropic\b", "앤트로픽"), (r"\bSpaceX\b", "스페이스X"),
@@ -449,6 +451,14 @@ def parse_float(value, default=0.0):
         return default
 
 
+def parse_float_opt(value):
+    """값이 없으면 None — 화면에서 '데이터 없음'으로 구분 표시하기 위해 쓴다."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def et_date(iso: str) -> str:
     """UTC 타임스탬프를 미국 동부시간 날짜(YYYY-MM-DD)로 바꾼다."""
     if not iso:
@@ -517,6 +527,8 @@ def norm_market(market: dict, event: dict) -> dict | None:
         "end_iso": market.get("endDate") or "",
         "change_24h": parse_float(market.get("oneDayPriceChange")) * 100.0,
         "change_1w": parse_float(market.get("oneWeekPriceChange")) * 100.0,
+        "change_1m": (lambda v: None if v is None else v * 100.0)(
+            parse_float_opt(market.get("oneMonthPriceChange"))),
         "tags": tags,
         "slug": market.get("slug") or "",
     }
@@ -576,23 +588,65 @@ def konglish(text: str) -> str:
     return out
 
 
+MONTH_KO = {
+    "january": "1", "february": "2", "march": "3", "april": "4", "may": "5", "june": "6",
+    "july": "7", "august": "8", "september": "9", "october": "10", "november": "11", "december": "12",
+}
+
+
+def kdate(text: str) -> str:
+    """영문 날짜 표기를 한국어로 바꾼다. 'December 31, 2026' → '2026년 12월 31일'."""
+    def rep(m: re.Match) -> str:
+        mon = m.group("mon").lower()
+        day = int(m.group("day"))
+        year = m.group("year")
+        if mon not in MONTH_KO:
+            return m.group(0)
+        return f"{year}년 {MONTH_KO[mon]}월 {day}일" if year else f"{MONTH_KO[mon]}월 {day}일"
+
+    out = re.sub(
+        r"\b(?P<mon>January|February|March|April|May|June|July|August|September|October|November|December)"
+        r"\s+(?P<year>\d{4})\b",
+        lambda m: f"{m.group('year')}년 {MONTH_KO.get(m.group('mon').lower(), '?')}월",
+        text, flags=re.I)
+    out = re.sub(
+        r"\b(?P<mon>January|February|March|April|May|June|July|August|September|October|November|December)"
+        r"\s+(?P<day>\d{1,2})(?!\d)(?:,\s*(?P<year>\d{4}))?",
+        rep, out, flags=re.I)
+    # 'by 2026년 12월 31일' 처럼 한국어 날짜 앞에 남은 전치사를 거둔다.
+    out = re.sub(r"\s+by\s+(?=\d{4}년)", " ", out)
+    return out
+
+
+def strip_will(text: str) -> str:
+    """제목 앞의 'Will '을 덜어 문장을 짧고 자연스럽게 만든다."""
+    return re.sub(r"^\s*will\s+(?!there\b)", "", text, flags=re.I)
+
+
 def auto_title(row: dict) -> str:
     """큐레이션에 없는 새 마켓용 간단 한국어 제목 생성(베스트 에포트)."""
     q = row["question"]
     base = q.rstrip("?")
 
+    # 자주 나오는 문형은 한국어 문장으로 옮긴다.
+    m = re.search(r"^(?:will\s+)?(.+?) be the largest company in the world by market cap on (.+)$", base, re.I)
+    if m:
+        return f"{konglish(strip_will(m.group(1))).strip()}, {kdate(m.group(2))}까지 세계 시가총액 1위?"
+    m = re.search(r"^(?:will\s+)?(.+?) announced resignation or removal again by (.+)$", base, re.I)
+    if m:
+        return f"{konglish(strip_will(m.group(1))).strip()} 퇴진·해임, {kdate(m.group(2))}까지?"
+
     m = re.search(r"reach[s]? \$([\d,\.]+[KMB]?) (?:by|in|on) (.+)$", base, re.I)
     if m:
-        return f"{konglish(base[:m.start()]).strip()}, {m.group(2)}까지 ${m.group(1)} 도달?"
+        return f"{konglish(strip_will(base[:m.start()])).strip()}, {kdate(m.group(2))}까지 ${m.group(1)} 도달?"
     m = re.search(r"dip to \$([\d,\.]+[KMB]?) (?:by|in|on) (.+)$", base, re.I)
     if m:
-        return f"{konglish(base[:m.start()]).strip()}, {m.group(2)}까지 ${m.group(1)} 아래로?"
+        return f"{konglish(strip_will(base[:m.start()])).strip()}, {kdate(m.group(2))}까지 ${m.group(1)} 아래로?"
     m = re.search(r"be above \$([\d,\.]+[KMB]?) on (.+)$", base, re.I)
     if m:
-        return f"{konglish(base[:m.start()]).strip()}, {m.group(2)} ${m.group(1)} 이상?"
-    if base.lower().startswith("will "):
-        base = base[5:]
-    return f"{konglish(base)}?"
+        return f"{konglish(strip_will(base[:m.start()])).strip()}, {kdate(m.group(2))} ${m.group(1)} 이상?"
+    title = kdate(konglish(strip_will(base)))
+    return title if title.endswith("?") else f"{title}?"
 
 
 def auto_explain(row: dict, cat_label: str) -> str:
@@ -670,6 +724,7 @@ def format_item(rule: dict, row: dict) -> dict:
         "no": round((1 - row["yes"]) * 100, 1),
         "change_24h": round(row["change_24h"], 1),
         "change_1w": round(row["change_1w"], 1),
+        "change_1m": None if row.get("change_1m") is None else round(row["change_1m"], 1),
         "volume_24h": int(round(row["volume_24h"])),
         "volume_total": int(round(row["volume_total"])),
         "liquidity": int(round(row["liquidity"])),

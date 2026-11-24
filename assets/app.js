@@ -16,6 +16,13 @@
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
+  // 이슈별 정적 페이지(/issues/{slug}.html) 파일명 — scripts/build_issue_pages.py 와 같은 규칙
+  function issueSlug(key) {
+    var s = String(key == null ? "" : key).trim().toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return s || "issue";
+  }
+
   function uid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
@@ -342,6 +349,7 @@
           '</div>' +
           voteHTML(it.key) +
         '</div>' +
+        '<a class="pcard-open" href="issues/' + esc(issueSlug(it.key)) + '.html">상세 페이지 열기 ↗</a>' +
       '</article>';
   }
 
@@ -414,6 +422,8 @@
         '<div class="dd-block"><h4>관전 포인트</h4><p>' + esc(it.watch) + '</p></div>' +
         '<div class="dd-block origin"><h4>원문 질문</h4><p>' + esc(it.question) + '</p></div>' +
       '</div>' +
+      '<a class="dd-open" href="issues/' + esc(issueSlug(it.key)) + '.html">' +
+        '📄 이 이슈 상세 페이지 열기 ↗ <span>해설·1개월 변화·판정 기준</span></a>' +
       '<div class="dd-src">출처: Polymarket 공개 데이터' + (it.auto ? ' · 자동 선별 항목' : '') + '</div>' +
       '<div class="cmt-box" id="dd-cmt" data-cmt-box="' + esc(it.key) + '">' +
         '<div class="cmt-head">💬 이슈 댓글 <span class="n" data-cmt-count2="' + esc(it.key) + '">' + n + '</span></div>' +
