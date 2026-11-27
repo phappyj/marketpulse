@@ -6,11 +6,11 @@
 <title>페이지를 찾을 수 없습니다 — 예측판</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F3F5F8">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=20261120v">
+<link rel="stylesheet" href="/assets/style.css?v=20261120v">
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 <!-- Google tag (gtag.js) — GA4 -->
@@ -25,30 +25,87 @@
 <body>
 <header class="site-header">
   <div class="wrap hd-top">
-    <a class="logo" href="./" aria-label="예측판 홈">
+    <a class="logo" href="/" aria-label="예측판 홈">
       <span class="logo-mark" aria-hidden="true">예</span>
       <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
     </a>
     <nav class="hd-tabs" aria-label="예측판 메뉴">
-      <a class="tab" href="./#/live">실시간 예측판</a>
-      <a class="tab" href="./#/talk">자유 수다방</a>
-      <a class="tab" href="./#/guide">이슈 해설</a>
+      <a class="tab" href="/#/live">실시간 예측판</a>
+      <a class="tab" href="/#/talk">자유 수다방</a>
+      <a class="tab" href="/#/guide">이슈 해설</a>
     </nav>
   </div>
 </header>
 <main class="wrap">
   <article class="page">
     <div class="page-in">
-    <h1>페이지를 찾을 수 없습니다</h1>
+    <h1 id="nf-title">페이지를 찾을 수 없습니다</h1>
     <p class="page-meta">404 Not Found</p>
-    <p>주소가 바뀌었거나 삭제된 페이지입니다. 아래에서 다시 시작해 보세요.</p>
+    <p id="nf-msg">주소가 바뀌었거나 삭제된 페이지입니다. 아래에서 다시 시작해 보세요.</p>
     <p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn primary" href="./#/live">실시간 예측판</a>
-      <a class="btn" href="./#/talk">자유 수다방</a>
-      <a class="btn ghost" href="./#/guide">이슈 해설</a>
+      <a class="btn primary" href="/#/live">실시간 예측판</a>
+      <a class="btn" href="/#/talk">자유 수다방</a>
+      <a class="btn" href="/issues/">이슈 전체 보기</a>
+      <a class="btn ghost" href="/#/guide">이슈 해설</a>
     </p>
     </div>
   </article>
 </main>
+<script>
+/* 구경로(예: /bbs, /talk, /issues/지난주소.html)로 들어온 방문자를 실제 주소로 넘긴다.
+   모르는 주소는 그대로 404 안내를 보여 준다. */
+(function () {
+  var LEGACY = {
+    "/bbs": "/#/talk", "/bbs/": "/#/talk", "/bbs/list": "/#/talk", "/bbs/list/": "/#/talk",
+    "/talk": "/#/talk", "/talk/": "/#/talk", "/talk/list": "/#/talk",
+    "/board": "/#/talk", "/board/": "/#/talk",
+    "/community": "/#/talk", "/community/": "/#/talk",
+    "/free": "/#/talk", "/free/": "/#/talk",
+    "/posts": "/#/talk", "/posts/": "/#/talk",
+    "/live": "/#/live", "/live/": "/#/live",
+    "/market": "/#/live", "/market/": "/#/live",
+    "/markets": "/#/live", "/markets/": "/#/live",
+    "/predict": "/#/live", "/predict/": "/#/live",
+    "/home": "/#/live", "/home/": "/#/live",
+    "/guide": "/#/guide", "/guide/": "/#/guide",
+    "/issues": "/issues/", "/issue": "/issues/"
+  };
+
+  var path = location.pathname.replace(/\/{2,}/g, "/");
+  var dest = LEGACY[path] || LEGACY[path.replace(/\/$/, "")] || "";
+
+  /* 이슈 상세의 지난 주소(/issues/사라진슬러그.html)는 이슈 전체 목록으로 보낸다. */
+  if (!dest && /^\/issues\/[^/]+\.html$/.test(path)) {
+    dest = "/issues/";
+  }
+  if (!dest) return;
+
+  var title = document.getElementById("nf-title");
+  var msg = document.getElementById("nf-msg");
+  if (title) title.textContent = "주소가 바뀌었습니다";
+  if (msg) {
+    msg.innerHTML = "이 주소는 <b>" + (dest.indexOf("/#/") === 0
+      ? (dest.indexOf("talk") > -1 ? "자유 수다방" : dest.indexOf("guide") > -1 ? "이슈 해설" : "실시간 예측판")
+      : "이슈 전체 목록") + "</b>으로 옮겨졌습니다. 잠시 후 자동으로 이동합니다. " +
+      '<a href="' + dest + '">바로 이동</a>';
+  }
+
+  var moved = false;
+  function go() {
+    if (moved) return;
+    moved = true;
+    location.replace(dest);
+  }
+  try {
+    gtag("event", "legacy_path_redirect", {
+      from_path: path,
+      to_path: dest,
+      event_callback: go,
+      event_timeout: 1200
+    });
+  } catch (e) {}
+  setTimeout(go, 1200);
+})();
+</script>
 </body>
 </html>

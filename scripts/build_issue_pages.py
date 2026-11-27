@@ -11,7 +11,8 @@ data/markets.json 을 읽어 이슈마다 검색 유입용 정적 페이지를 �
   sitemap.xml          홈·안내 페이지 + 이슈 허브 + 모든 이슈 페이지
 
 - 표준 라이브러리만 사용한다(GitHub Actions에서 추가 설치 없이 실행).
-- 사라진 이슈의 HTML 파일은 지운다(고아 페이지·404 방지).
+- 사라진 이슈의 HTML 파일은 지우지 않고, 같은 이슈의 새 주소(또는 /issues/ 목록)로
+  넘기는 안내 페이지로 바꾼다. 검색·블로그·X에 남은 구 주소가 404가 되지 않게 한다.
 - 베팅·도박 유도 표현은 쓰지 않는다. 공개 확률·해설·내부 링크만 담는다.
 
 사용법:  python3 scripts/build_issue_pages.py [--dry-run]
@@ -137,6 +138,116 @@ def pretty_title(t: str) -> str:
     """표시용 제목 정리 — 중복 공백·앞뒤 기호 제거."""
     t = re.sub(r"\s+", " ", str(t or "")).strip()
     return t
+
+
+# ---------------------------------------------------------------------------
+# 사라진 이슈 페이지 → 404 대신 "새 주소로 이동" 안내
+# ---------------------------------------------------------------------------
+# 2시간마다 자동 갱신하면서 마켓이 빠지거나 slug가 바뀌면 구 주소가 사라진다.
+# 그때 파일을 지우면 검색엔진·블로그·X에 남은 링크가 404가 되므로,
+# 같은 이슈의 새 주소(없으면 /issues/ 목록)로 넘기는 얇은 안내 페이지를 남긴다.
+STUB_TARGET_META = 'name="yp-redirect-target"'
+STUB_LABEL_META = 'name="yp-redirect-label"'
+MAX_REDIRECT_STUBS = 200
+
+
+def stub_target_of(doc: str) -> str | None:
+    """이미 안내 페이지면 넘길 대상 파일명("" = 목록)을, 아니면 None."""
+    m = re.search(r'<meta name="yp-redirect-target" content="([^"]*)"', doc)
+    return m.group(1) if m else None
+
+
+def stub_label_of(doc: str) -> str:
+    m = re.search(r'<meta name="yp-redirect-label" content="([^"]*)"', doc)
+    return pretty_title(html.unescape(m.group(1))) if m else ""
+
+
+def issue_title_of(doc: str) -> str:
+    """이슈 상세 페이지의 <title>{제목} — {확률}% 실시간 확률 | 예측판</title>에서 제목만."""
+    m = re.search(r"<title>(.*?)</title>", doc, re.S)
+    if not m:
+        return ""
+    t = html.unescape(m.group(1)).strip()
+    m2 = re.match(r"^(.*?)\s+—\s+[\d.]+%\s*실시간 확률\s*\|\s*예측판$", t, re.S)
+    if m2:
+        return pretty_title(m2.group(1))
+    return pretty_title(t.split(" | ")[0].split(" — ")[0])
+
+
+def render_redirect_stub(target: str, label: str) -> str:
+    """구 주소를 살리는 안내 페이지. target은 issues/ 안의 파일명(""이면 목록)."""
+    href = f"/issues/{target}" if target else "/issues/"
+    label = pretty_title(label)
+    title = (f"{label} — 주소 안내 | 예측판" if label else "주소 안내 | 예측판")
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{E(title)}</title>
+<meta name="robots" content="noindex,follow">
+<meta name="theme-color" content="#F3F5F8">
+<meta name="yp-redirect-target" content="{E(target)}">
+<meta name="yp-redirect-label" content="{E(label)}">
+<link rel="canonical" href="{SITE}{href}">
+<meta http-equiv="refresh" content="0; url={href}">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<link rel="stylesheet" href="/assets/style.css?v=20261124issue">
+<!-- Google tag (gtag.js) — GA4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{GA_ID}');
+</script>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap hd-top">
+    <a class="logo" href="/" aria-label="예측판 홈">
+      <span class="logo-mark" aria-hidden="true">예</span>
+      <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
+    </a>
+    <nav class="hd-tabs" aria-label="예측판 메뉴">
+      <a class="tab" href="/#/live">실시간 예측판</a>
+      <a class="tab" href="/#/talk">자유 수다방</a>
+      <a class="tab" href="/#/guide">이슈 해설</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <article class="page">
+    <div class="page-in">
+    <h1>주소가 바뀌었습니다</h1>
+    <p class="page-meta">{E(label) if label else "이슈 페이지 주소 안내"}</p>
+    <p>이 이슈 페이지는 <b>{E(label) if label else "이슈 전체 목록"}</b> 주소로 옮겨졌습니다. 잠시 후 자동으로 이동합니다.</p>
+    <p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn primary" href="{href}">{E(label) + " 보기" if label else "이슈 전체 보기"}</a>
+      <a class="btn" href="/#/live">실시간 예측판</a>
+      <a class="btn ghost" href="/issues/">이슈 전체 목록</a>
+    </p>
+    </div>
+  </article>
+</main>
+<script>
+(function () {{
+  var dest = {json.dumps(href)};
+  var moved = false;
+  function go() {{ if (!moved) {{ moved = true; location.replace(dest); }} }}
+  try {{
+    gtag("event", "issue_page_redirect", {{
+      from_path: location.pathname, to_path: dest,
+      event_callback: go, event_timeout: 1200
+    }});
+  }} catch (e) {{}}
+  setTimeout(go, 1200);
+}})();
+</script>
+</body>
+</html>
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -697,14 +808,50 @@ def main() -> int:
     for name, html_doc in pages.items():
         (ISSUES_DIR / name).write_text(html_doc, encoding="utf-8")
 
-    # 사라진 이슈 페이지 정리
+    # 사라진 이슈 페이지 정리 — 지우지 않고 "새 주소로 이동" 안내 페이지로 바꾼다.
+    # (검색엔진·블로그·X에 남은 구 주소가 404가 되지 않도록)
+    by_title = {pretty_title(it.get("title", "")): slug_map[it["key"]] for it in items}
+    stubs: list[pathlib.Path] = []
     removed = 0
-    for p in ISSUES_DIR.glob("*.html"):
-        if p.name not in pages:
+
+    def stub_target(label: str, prev: str | None) -> str:
+        t = by_title.get(pretty_title(label))
+        if t and f"{t}.html" in pages:
+            return f"{t}.html"
+        if prev and prev in pages:
+            return prev
+        return ""
+
+    for p in sorted(ISSUES_DIR.glob("*.html")):
+        if p.name in pages or p.name == "index.html":
+            continue
+        try:
+            doc = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        prev = stub_target_of(doc)
+        label = stub_label_of(doc) if prev is not None else issue_title_of(doc)
+        target = stub_target(label, prev)
+        if not label and prev is None:
             p.unlink()
             removed += 1
+            continue
+        p.write_text(render_redirect_stub(target, label), encoding="utf-8")
+        stubs.append(p)
+
+    # 쌓인 안내 페이지는 최대 개수까지만 남긴다(오래된 것부터 정리).
+    if len(stubs) > MAX_REDIRECT_STUBS:
+        stubs.sort(key=lambda x: x.stat().st_mtime)
+        cut = len(stubs) - MAX_REDIRECT_STUBS
+        for p in stubs[:cut]:
+            p.unlink()
+            removed += 1
+        stubs = stubs[cut:]
+
+    if stubs:
+        print(f"  · 구 주소 안내 페이지 {len(stubs)}개 유지(0건이면 404 안 됨)")
     if removed:
-        print(f"  · 오래된 페이지 {removed}개 삭제")
+        print(f"  · 정리한 페이지 {removed}개")
 
     SITEMAP_PATH.write_text(sitemap, encoding="utf-8")
     print(f"  → sitemap.xml ({len(items) + 6}개 URL)")
