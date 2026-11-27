@@ -179,6 +179,15 @@ def render_redirect_stub(target: str, label: str) -> str:
     href = f"/issues/{target}" if target else "/issues/"
     label = pretty_title(label)
     title = (f"{label} — 주소 안내 | 예측판" if label else "주소 안내 | 예측판")
+    if target:
+        lead = "이 이슈 페이지는 주소가 바뀌었습니다. 잠시 후 새 주소로 자동 이동합니다."
+        btn = "새 주소로 이동"
+        extra = '<a class="btn ghost" href="/issues/">이슈 전체 목록</a>'
+    else:
+        lead = ("이 이슈는 예측판 목록에서 내려갔습니다. 최신 확률과 다른 이슈는 "
+                "이슈 전체 목록에서 확인하시면 됩니다. 잠시 후 자동으로 이동합니다.")
+        btn = "이슈 전체 보기"
+        extra = ""
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -220,13 +229,13 @@ def render_redirect_stub(target: str, label: str) -> str:
 <main class="wrap">
   <article class="page">
     <div class="page-in">
-    <h1>주소가 바뀌었습니다</h1>
-    <p class="page-meta">{E(label) if label else "이슈 페이지 주소 안내"}</p>
-    <p>이 이슈 페이지는 <b>{E(label) if label else "이슈 전체 목록"}</b> 주소로 옮겨졌습니다. 잠시 후 자동으로 이동합니다.</p>
+    <h1>이슈 페이지가 이동했습니다</h1>
+    <p class="page-meta">{E(label) if label else "이슈 전체 목록"}</p>
+    <p>{lead}</p>
     <p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn primary" href="{href}">{E(label) + " 보기" if label else "이슈 전체 보기"}</a>
+      <a class="btn primary" href="{href}">{btn}</a>
       <a class="btn" href="/#/live">실시간 예측판</a>
-      <a class="btn ghost" href="/issues/">이슈 전체 목록</a>
+      {extra}
     </p>
     </div>
   </article>
