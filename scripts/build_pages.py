@@ -44,7 +44,7 @@ HEAD = """<!DOCTYPE html>
       <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
     </a>
     <nav class="hd-tabs" aria-label="예측판 메뉴">
-      <a class="tab" href="./#/live">실시간 예측판</a>
+      <a class="tab" href="./#/live">오늘의 확률</a>
       <a class="tab" href="./#/talk">자유 수다방</a>
       <a class="tab" href="./#/guide">이슈 해설</a>
     </nav>
@@ -71,7 +71,7 @@ FOOT = """    </div>
           <span class="logo-mark" aria-hidden="true">예</span>
           <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
         </a>
-        <p>글로벌 예측시장의 공개 확률 데이터를 한국어 해설과 함께 정리하는 정보 커뮤니티입니다.
+        <p>시장이 매긴 확률 데이터를 한국어 해설과 함께 정리하는 정보 커뮤니티입니다.
           베팅·거래·투자 권유를 목적으로 하지 않습니다.</p>
       </div>
       <nav class="footer-links" aria-label="사이트 정보">
@@ -93,17 +93,36 @@ FOOT = """    </div>
 """
 
 ABOUT = """    <h1>서비스 소개</h1>
-    <p class="page-meta">예측판(YECHEUKPAN) · 최종 수정 2026년 11월 20일</p>
+    <p class="page-meta">예측판(YECHEUKPAN) · 최종 수정 2026년 11월 28일</p>
 
-    <p>예측판은 <strong>전 세계 예측시장에서 거래되는 확률 데이터를 한국어로 정리해 보여주고,
-      그 위에 독자들의 판단을 모으는 정보 커뮤니티</strong>입니다. 미국의 금리 결정, 비트코인의 가격,
-      AI 기업의 몸값, 중동과 유럽의 정치·외교 이슈처럼 숫자로 기대를 말할 수 있는 주제를 골라
-      확률이 실제로 무엇을 뜻하는지 해설과 함께 제공합니다.</p>
+    <h2>예측판은 어떤 곳인가요?</h2>
+    <p>예측판은 경제·금리, 코인·금융, AI·테크, 글로벌 이슈에 대해 “시장은 이 일이 일어날 확률을 몇 %로 보고
+      있는가”를 데이터로 보여 주는 <strong>정보 사이트</strong>입니다.</p>
+
+    <h2>데이터는 어디서 오나요?</h2>
+    <p>해외 거래소들이 누구나 볼 수 있게 공개하는 확률 데이터를 모아서 보여 줍니다. 현재
+      <strong>Kalshi</strong>(미국 상품선물거래위원회 CFTC 규제 거래소)와 <strong>Polymarket</strong>의 공개 데이터를
+      함께 씁니다. 하나의 출처에만 기대지 않으려고 출처를 여러 곳으로 나눠 두고 있습니다. 카드마다 붙는
+      <strong>출처 배지</strong>로 어느 곳의 값인지 확인할 수 있습니다.</p>
+
+    <h2>예측판에서 할 수 있는 것</h2>
+    <ul>
+      <li>이슈별 현재 확률과 최근 변화 확인</li>
+      <li>이슈 배경에 대한 한국어 해설 읽기</li>
+      <li>한줄 의견 투표와 자유 게시판 이용</li>
+    </ul>
+
+    <h2>예측판에 없는 것</h2>
+    <ul>
+      <li>매매, 베팅, 입금·출금, 보상 기능</li>
+      <li>해외 거래 사이트로 가는 링크, 가입 안내, 접속 우회 안내</li>
+    </ul>
+    <p>예측판은 정보 해설 사이트이며, 어떤 서비스의 이용도 권유하지 않습니다.</p>
 
     <div class="panel">
       <h3>왜 만들었나</h3>
       <p>주식·환율·금리 뉴스는 넘쳐나지만, “시장 참가자들이 지금 이 사건을 몇 % 확률로 보고 있는가”를
-        한눈에 정리해 주는 한국어 콘텐츠는 드뭅니다. 해외 예측시장에는 그런 데이터가 공개되어 있지만
+        한눈에 정리해 주는 한국어 콘텐츠는 드뭅니다. 해외 거래소에는 그런 데이터가 공개되어 있지만
         영어로, 그리고 시장 화면 형태로만 존재합니다. 예측판은 그 숫자를 <strong>읽을 수 있는 문장과 해설</strong>로
         바꾸고, 거기에 <strong>국내 독자들의 한줄 투표와 토론</strong>을 얹는 일을 합니다.</p>
     </div>
@@ -122,7 +141,7 @@ ABOUT = """    <h1>서비스 소개</h1>
     <table>
       <thead><tr><th>탭</th><th>내용</th></tr></thead>
       <tbody>
-        <tr><td>실시간 예측판</td><td>오늘의 주요 예측 TOP 3 하이라이트와 전체 이슈 카드. 카드마다 시장 확률·한줄 투표·댓글 수가 함께 표시되고, 카드를 누르면 거래량·마감일과 해설이 상세 창으로 열립니다.</td></tr>
+        <tr><td>오늘의 확률</td><td>오늘의 주요 예측 TOP 3 하이라이트와 전체 이슈 카드. 카드마다 시장 확률·한줄 투표·댓글 수가 함께 표시되고, 카드를 누르면 거래량·마감일과 해설이 상세 창으로 열립니다.</td></tr>
         <tr><td>자유 수다방</td><td>금리·증시 / 코인 / AI·빅테크 / 자유 말머리로 글과 댓글을 나누는 게시판입니다.</td></tr>
         <tr><td>이슈 해설</td><td>숫자를 읽는 네 가지 규칙, 예측판 여론과 시장 확률의 차이, 커뮤니티 운영 원칙, FAQ.</td></tr>
       </tbody>
@@ -139,13 +158,14 @@ ABOUT = """    <h1>서비스 소개</h1>
       </tbody>
     </table>
 
-    <h2>데이터는 어떻게 들어오나요</h2>
-    <p>Polymarket이 공개하는 무료 API(Gamma API)에서 경제·금리, 코인, AI·테크, 글로벌 태그의 마켓을
-      수집합니다. 그중 <strong>한국어 해설이 준비된 이슈를 우선 선별</strong>하고, 부족한 카테고리는 거래량 기준으로
-      자동 보충합니다. 선별이 끝나면 <code>data/markets.json</code> 파일로 저장되고, 이 사이트는 그 파일을 읽어
-      화면을 그립니다. 이렇게 만든 저장 데이터는 <strong>2시간마다 자동</strong>으로 새로 만들어지고, 브라우저는 그 위에
-      <strong>폴리마켓 공개 API를 직접 조회한 실시간 확률</strong>을 1분마다 덮어씁니다. 상단 배지가 ‘🟢 실시간 HH:MM:SS’이면
-      방금 받은 값이고, 연결이 지연되면 마지막 저장 데이터의 갱신 시각을 대신 보여 줍니다.</p>
+    <h2>숫자는 어떻게 갱신되나요</h2>
+    <p>두 곳의 공개 API를 함께 씁니다. <strong>Polymarket</strong> 공개 API에서는 경제·금리, 코인, AI·테크, 글로벌 태그의
+      마켓을 모아 <strong>한국어 해설이 준비된 이슈를 우선 선별</strong>하고, 부족한 카테고리는 거래량 기준으로 자동
+      보충합니다. <strong>Kalshi</strong> 공개 API에서는 열린 이벤트를 24시간 거래량 순으로 훑어 경제·금리, 코인·금융,
+      AI·테크, 글로벌 카테고리의 주요 마켓을 한국어 제목·해설로 옮깁니다. 선별이 끝나면
+      <code>data/markets.json</code> 파일로 저장되고(<strong>2시간마다 자동 갱신</strong>), 브라우저는 Polymarket 항목을
+      공개 API에서 직접 조회해 <strong>1분마다</strong> 덮어씁니다. Kalshi는 공개 API가 브라우저 교차 출처 요청을
+      허용하지 않아 저장값을 그대로 표시하며, 카드의 출처 배지가 이를 알려 줍니다.</p>
 
     <h2>커뮤니티는 어떻게 운영되나요</h2>
     <ol>
@@ -163,7 +183,7 @@ ABOUT = """    <h1>서비스 소개</h1>
         사이트로 연결되는 링크·제휴 코드도 넣지 않습니다.</li>
       <li><strong>국내 정치·선거는 다루지 않습니다.</strong> 경제·금융·기술·국제 이슈로 범위를 한정합니다.</li>
       <li><strong>해설 없는 숫자는 싣지 않습니다.</strong> 모든 이슈에는 짧은 배경 설명과 관전 포인트가 붙습니다.</li>
-      <li><strong>출처를 밝힙니다.</strong> 모든 확률은 Polymarket 공개 데이터에서 왔으며, 예측판이 계산하거나
+      <li><strong>출처를 밝힙니다.</strong> 모든 확률은 Kalshi·Polymarket 등 공개 시장 데이터에서 왔으며, 예측판이 계산하거나
         보증하는 값이 아닙니다.</li>
       <li><strong>틀릴 수 있음을 인정합니다.</strong> 확률은 예측이 아니라 가격입니다. 자세한 내용은
         <a href="disclaimer.html">면책 고지</a>를 참고하세요.</li>
@@ -265,12 +285,12 @@ TERMS = """    <h1>이용약관</h1>
       사이트를 이용하면 본 약관에 동의한 것으로 봅니다.</p>
 
     <h2>제1조 (목적)</h2>
-    <p>이 약관은 사이트가 제공하는 글로벌 예측 확률 정보, 이슈 해설, 한줄 투표, 댓글, 자유 수다방 서비스의
+    <p>이 약관은 사이트가 제공하는 글로벌 공개 시장 확률 정보, 이슈 해설, 한줄 투표, 댓글, 자유 수다방 서비스의
       이용에 관한 권리·의무와 책임 사항을 정하는 것을 목적으로 합니다.</p>
 
     <h2>제2조 (서비스의 내용)</h2>
     <ol>
-      <li>사이트는 공개 API로 수집한 예측시장 확률·거래량 데이터를 한국어 해설과 함께 제공합니다.</li>
+      <li>사이트는 공개 API로 수집한 Kalshi·Polymarket 등 공개 시장의 확률·거래량 데이터를 한국어 해설과 함께 제공합니다.</li>
       <li>이용자는 이슈별 한줄 투표와 댓글, 자유 수다방 게시글·댓글로 의견을 남길 수 있습니다.</li>
       <li>사이트는 <strong>베팅·거래·입금 대행·투자 자문</strong>을 제공하지 않으며, 관련 사이트로 연결되는 링크나
         제휴 코드를 게재하지 않습니다.</li>
@@ -307,7 +327,7 @@ TERMS = """    <h1>이용약관</h1>
     </ol>
 
     <h2>제6조 (정보의 성격과 한계)</h2>
-    <p>표시되는 확률은 예측시장 참가자들이 매긴 기대값이며 결과를 보장하지 않습니다. 커뮤니티의 투표·댓글은
+    <p>표시되는 확률은 Kalshi·Polymarket 등 글로벌 공개 시장 참가자들이 매긴 기대값이며 결과를 보장하지 않습니다. 커뮤니티의 투표·댓글은
       작성자의 개인 의견으로 사이트의 견해가 아닙니다. 자세한 내용은 <a href="disclaimer.html">면책 고지</a>를 따릅니다.</p>
 
     <h2>제7조 (서비스의 변경·중단)</h2>
@@ -331,13 +351,21 @@ TERMS = """    <h1>이용약관</h1>
 """
 
 DISCLAIMER = """    <h1>면책 고지</h1>
-    <p class="page-meta">시행일: 2026년 11월 20일</p>
+    <p class="page-meta">시행일: 2026년 11월 28일</p>
 
     <div class="panel">
       <p style="margin:0"><strong>요약:</strong> 예측판은 정보 제공 사이트입니다. 베팅·거래·투자 자문이 아니며,
         확률은 참가자들의 기대를 모은 ‘가격’일 뿐 결과를 보장하지 않습니다. 투자 판단과 그 결과에 대한 책임은
         이용자 본인에게 있습니다.</p>
     </div>
+
+    <h2>핵심 안내</h2>
+    <ol>
+      <li>예측판이 보여 주는 확률은 해외 공개 데이터를 정리한 참고 정보이며, 미래의 결과를 보장하지 않습니다.</li>
+      <li>예측판의 어떤 내용도 투자 권유, 매매 권유, 또는 특정 서비스의 이용 권유가 아닙니다.</li>
+      <li>예측판은 국내에서 이용이 제한된 서비스의 가입, 접속, 이용 방법을 안내하지 않으며, 게시판에서도 이를 금지합니다.</li>
+      <li>데이터는 출처 사정에 따라 늦게 반영되거나 틀릴 수 있습니다.</li>
+    </ol>
 
     <h2>1. 정보 제공 목적</h2>
     <p>본 사이트의 모든 콘텐츠는 일반적인 정보 제공과 교육을 목적으로 작성되었습니다. 특정 주식·채권·가상자산·
@@ -350,7 +378,7 @@ DISCLAIMER = """    <h1>면책 고지</h1>
 
     <h2>3. 확률의 성격</h2>
     <ul>
-      <li>표시된 확률은 전 세계 예측시장 참가자들이 매긴 <strong>기대값</strong>이며, 발생 가능성에 대한 통계적 보증이 아닙니다.</li>
+      <li>표시된 확률은 Kalshi·Polymarket 등 글로벌 공개 시장 참가자들이 매긴 <strong>기대값</strong>이며, 발생 가능성에 대한 통계적 보증이 아닙니다.</li>
       <li>확률 90%인 사건도 실제로 일어나지 않을 수 있고, 확률 10%인 사건도 일어날 수 있습니다.</li>
       <li>확률은 거래에 따라 실시간으로 변하며, 스프레드·수수료·유동성에 따라 실제 기대와 차이가 날 수 있습니다.</li>
       <li>동일한 사건이라도 마켓의 판정 기준(종가 기준/장중 터치 기준, 판정 출처 등)에 따라 확률이 달라집니다.</li>
@@ -369,7 +397,7 @@ DISCLAIMER = """    <h1>면책 고지</h1>
     <h2>6. 베팅·도박과의 관계</h2>
     <p>예측판은 베팅·도박·예측시장 참여를 위한 서비스가 아닙니다. 사이트 내에는 <strong>회원가입·입금·베팅·
       거래 기능이 없고, 관련 사이트로 연결되는 링크나 제휴 코드도 제공하지 않습니다.</strong> 본 사이트는
-      데이터를 제공하는 예측시장 운영사와 제휴·후원 관계가 없습니다. 커뮤니티에서 도박·사설 토토·리딩방을
+      데이터를 제공하는 시장 운영사와 제휴·후원 관계가 없습니다. 커뮤니티에서 도박·사설 토토·리딩방을
       홍보하는 글은 금칙어 필터로 차단되며, 발견 즉시 가려집니다.</p>
 
     <h2>7. 콘텐츠의 범위</h2>
@@ -393,7 +421,7 @@ DISCLAIMER = """    <h1>면책 고지</h1>
 
 PAGES = [
     ("about.html", "서비스 소개 — 예측판(YECHEUKPAN)",
-     "예측판은 전 세계 예측시장의 공개 확률을 한국어 해설과 함께 정리하고, 이슈별 한줄 투표·댓글로 의견을 나누는 정보 커뮤니티입니다.", ABOUT),
+     "시장이 매긴 확률로 경제·코인·AI 데이터를 읽는 사이트입니다. Kalshi 등 글로벌 공개 지표를 한국어 해설로 종합하고, 이슈별 한줄 투표·댓글로 의견을 나눕니다.", ABOUT),
     ("privacy.html", "개인정보처리방침 — 예측판(YECHEUKPAN)",
      "예측판의 개인정보처리방침입니다. 회원가입 없는 커뮤니티에서 수집하는 정보, 보관 기간, 이용자의 권리를 설명합니다.", PRIVACY),
     ("terms.html", "이용약관 — 예측판(YECHEUKPAN)",
@@ -407,61 +435,5 @@ for slug, title, desc, body in PAGES:
     (ROOT / slug).write_text(html, encoding="utf-8")
     print("wrote", slug)
 
-# 404
-n404 = """<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>페이지를 찾을 수 없습니다 — 예측판</title>
-<meta name="robots" content="noindex">
-<meta name="theme-color" content="#F3F5F8">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=20261120v">
-<!-- Google AdSense -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
-<!-- Google tag (gtag.js) — GA4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-D0QGKN71ZE"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-D0QGKN71ZE');
-</script>
-</head>
-<body>
-<header class="site-header">
-  <div class="wrap hd-top">
-    <a class="logo" href="./" aria-label="예측판 홈">
-      <span class="logo-mark" aria-hidden="true">예</span>
-      <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
-    </a>
-    <nav class="hd-tabs" aria-label="예측판 메뉴">
-      <a class="tab" href="./#/live">실시간 예측판</a>
-      <a class="tab" href="./#/talk">자유 수다방</a>
-      <a class="tab" href="./#/guide">이슈 해설</a>
-    </nav>
-  </div>
-</header>
-<main class="wrap">
-  <article class="page">
-    <div class="page-in">
-    <h1>페이지를 찾을 수 없습니다</h1>
-    <p class="page-meta">404 Not Found</p>
-    <p>주소가 바뀌었거나 삭제된 페이지입니다. 아래에서 다시 시작해 보세요.</p>
-    <p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn primary" href="./#/live">실시간 예측판</a>
-      <a class="btn" href="./#/talk">자유 수다방</a>
-      <a class="btn ghost" href="./#/guide">이슈 해설</a>
-    </p>
-    </div>
-  </article>
-</main>
-</body>
-</html>
-"""
-(ROOT / "404.html").write_text(n404, encoding="utf-8")
-print("wrote 404.html")
+# 404.html 은 구경로(/bbs·/talk·지난 이슈 주소) 리다이렉트 스크립트가 들어 있어
+# 이 생성기 대신 저장소에서 직접 관리한다. 여기서 덮어쓰면 리다이렉트가 사라진다.

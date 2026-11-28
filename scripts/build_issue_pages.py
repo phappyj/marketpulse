@@ -67,6 +67,31 @@ def money(n) -> str:
     return "$" + str(round(n))
 
 
+def vol_txt(n, it: dict) -> str:
+    """거래량 표기 — Kalshi 는 계약 수, Polymarket 은 금액."""
+    if (it or {}).get("source") == "Kalshi":
+        try:
+            n = float(n)
+        except (TypeError, ValueError):
+            return "—"
+        if n >= 1e8:
+            return f"{n / 1e8:.1f}".rstrip("0").rstrip(".") + "억계약"
+        if n >= 1e4:
+            return f"{n / 1e4:.1f}".rstrip("0").rstrip(".") + "만계약"
+        return f"{round(n):,}계약"
+    return money(n)
+
+
+def source_of(it: dict) -> str:
+    return (it or {}).get("source") or "Polymarket"
+
+
+def src_tag(it: dict) -> str:
+    """카드·상세에 붙는 출처 배지."""
+    s = source_of(it)
+    return f'<span class="src-tag {"kalshi" if s == "Kalshi" else "pm"}">{E(s)}</span>'
+
+
 def num1(v) -> str:
     try:
         return "%.1f" % float(v)
@@ -220,7 +245,7 @@ def render_redirect_stub(target: str, label: str) -> str:
       <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
     </a>
     <nav class="hd-tabs" aria-label="예측판 메뉴">
-      <a class="tab" href="/#/live">실시간 예측판</a>
+      <a class="tab" href="/#/live">오늘의 확률</a>
       <a class="tab" href="/#/talk">자유 수다방</a>
       <a class="tab" href="/#/guide">이슈 해설</a>
     </nav>
@@ -314,7 +339,7 @@ def head(title: str, desc: str, canonical: str, og_type: str = "article",
       <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
     </a>
     <nav class="hd-tabs" aria-label="예측판 메뉴">
-      <a class="tab" href="/#/live">실시간 예측판</a>
+      <a class="tab" href="/#/live">오늘의 확률</a>
       <a class="tab" href="/#/talk">자유 수다방</a>
       <a class="tab" href="/#/guide">이슈 해설</a>
     </nav>
@@ -335,7 +360,7 @@ FOOT = """
           <span class="logo-mark" aria-hidden="true">예</span>
           <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
         </a>
-        <p>글로벌 예측시장의 공개 확률 데이터를 한국어 해설과 함께 정리하는 정보 커뮤니티입니다.
+        <p>시장이 매긴 확률 데이터를 한국어 해설과 함께 정리하는 정보 커뮤니티입니다.
           베팅·거래·투자 권유를 목적으로 하지 않습니다.</p>
       </div>
       <nav class="footer-links" aria-label="사이트 정보">
@@ -348,7 +373,7 @@ FOOT = """
       </nav>
     </div>
     <div class="footer-legal">
-      <p><strong>데이터 출처</strong> · Polymarket Gamma 공개 API. 확률은 해당 시장 참가자들이 매긴 값이며,
+      <p><strong>데이터 출처</strong> · Kalshi(미국 CFTC 인가)·Polymarket 등 글로벌 공개 시장. 확률은 해당 시장 참가자들이 매긴 값이며,
         예측판이 계산하거나 보증하는 값이 아닙니다.</p>
       <p>© 2026 YECHEUKPAN. All rights reserved.</p>
     </div>
@@ -402,13 +427,13 @@ def reading_blocks(it: dict) -> str:
 
     # 거래량 해석
     if v24 >= 1_000_000:
-        vol = (f'24시간 거래량 {money(v24)}·누적 {money(vtot)}은 이 이슈에 시장의 관심과 자금이 '
+        vol = (f'24시간 거래량 {vol_txt(v24, it)}·누적 {vol_txt(vtot, it)}은 이 이슈에 시장의 관심과 자금이 '
                '상당히 실려 있다는 뜻입니다. 참여자가 많을수록 확률이 한두 사람의 움직임에 흔들릴 여지는 줄어듭니다.')
     elif v24 >= 100_000:
-        vol = (f'24시간 거래량은 {money(v24)}, 누적 거래량은 {money(vtot)}입니다. '
+        vol = (f'24시간 거래량은 {vol_txt(v24, it)}, 누적 거래량은 {vol_txt(vtot, it)}입니다. '
                '활발한 편이지만 큰 이슈에 비하면 얇은 시장이므로, 확률 1~2%p 차이를 과도하게 해석할 필요는 없습니다.')
     else:
-        vol = (f'24시간 거래량은 {money(v24)}로 적은 편입니다. 거래량이 얇은 마켓은 소수 참가자의 주문만으로도 '
+        vol = (f'24시간 거래량은 {vol_txt(v24, it)}로 적은 편입니다. 거래량이 얇은 마켓은 소수 참가자의 주문만으로도 '
                '확률이 크게 출렁이므로, 숫자의 절대값보다 방향과 흐름 위주로 보시길 권합니다.')
     if liq:
         vol += f' 현재 호가 유동성은 {money(liq)} 수준입니다.'
@@ -448,7 +473,7 @@ def summary_line(it: dict) -> str:
         tone = "가능성은 낮게 보지만 변수는 남아 있는 구간입니다"
     else:
         tone = "시장은 사실상 어렵다고 보고 있는 구간입니다"
-    return (f"<strong>{E(title)}</strong> — 글로벌 예측시장의 YES 확률은 <strong>{num1(yes)}%</strong>로, {tone}. "
+    return (f"<strong>{E(title)}</strong> — 시장이 매긴 YES 확률은 <strong>{num1(yes)}%</strong>로, {tone}. "
             f"24시간 {delta_txt(it.get('change_24h'))}, 마감 {E(end_kr(it.get('end_date', '')))}.")
 
 
@@ -457,7 +482,7 @@ def issue_card_row(it: dict, slug: str) -> str:
     return (
         f'<li><a href="/issues/{slug}.html">'
         f'<span class="ip-r-t">{E(pretty_title(it.get("title", "")))}</span>'
-        f'<span class="ip-r-v">{num1(it.get("yes"))}%'
+        f'<span class="ip-r-v">{src_tag(it)} {num1(it.get("yes"))}%'
         f'<i class="{cls}">{delta_txt(it.get("change_24h"))}</i></span>'
         f'</a></li>'
     )
@@ -498,13 +523,11 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
     canonical = f"{SITE}/issues/{slug}.html"
     updated_day = (data.get("updated_at") or "")[:10]
 
-    page_title = f"{title} — {num1(yes)}% 실시간 확률 | 예측판"
+    page_title = f"{title} — 시장 확률 {num1(yes)}% | 예측판"
     d24, d1w, d1m = it.get("change_24h"), it.get("change_1w"), it.get("change_1m")
     desc = (
-        f"{title} — 글로벌 예측시장 YES 확률 지금 {num1(yes)}%. "
-        f"24시간 {delta_txt(d24)} · 1주 {delta_txt(d1w)}"
-        + (f" · 1개월 {delta_txt(d1m)}" if d1m is not None else "")
-        + f". 마감 {end_kr(it.get('end_date',''))}. 배경과 관전 포인트를 한국어로 정리했습니다."
+        f"{title.rstrip('?').strip()}에 대해 시장 참여자들이 매긴 확률은 현재 {num1(yes)}%입니다. "
+        "최근 변화와 배경을 한국어로 해설합니다."
     )
 
     ld = {
@@ -560,11 +583,12 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
 
       <header class="ip-head">
         <span class="ctag {E(cat)}">{cat_icon} {E(cat_label)}</span>
+        {src_tag(it)}
         <h1>{E(title)}</h1>
         <p class="ip-meta-line">
           <span>마감 <b>{E(end_kr(it.get("end_date", "")))}</b>{f' · {E(dl)}' if dl else ''}</span>
           <span>데이터 기준 <b>{E(data.get("updated_label") or "")}</b></span>
-          <span>출처 <b>Polymarket 공개 데이터</b></span>
+          <span>출처 <b>{E(source_of(it))} 공개 데이터</b></span>
         </p>
       </header>
 
@@ -589,9 +613,10 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
       <table class="ip-facts">
         <caption>거래·마감 정보</caption>
         <tbody>
-          <tr><th>24시간 거래량</th><td>{money(it.get("volume_24h"))}</td>
-              <th>누적 거래량</th><td>{money(it.get("volume_total"))}</td></tr>
-          <tr><th>호가 유동성</th><td>{money(it.get("liquidity"))}</td>
+          <tr><th>24시간 거래량</th><td>{vol_txt(it.get("volume_24h"), it)}</td>
+              <th>누적 거래량</th><td>{vol_txt(it.get("volume_total"), it)}</td></tr>
+          <tr><th>{'미결제 약정' if source_of(it) == 'Kalshi' else '호가 유동성'}</th>
+              <td>{f"{int(it.get('open_interest') or 0):,}계약" if source_of(it) == 'Kalshi' else money(it.get("liquidity"))}</td>
               <th>마감일</th><td>{E(end_kr(it.get("end_date", "")))} <span class="ip-mut">(미국 동부시간 기준)</span></td></tr>
         </tbody>
       </table>
@@ -637,12 +662,13 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
       </section>
 
       <div class="ip-note">
-        <p><strong>안내</strong> · 예측판은 글로벌 예측시장에 공개된 확률을 한국어로 정리하는 정보 사이트입니다.
+        <p><strong>안내</strong> · 예측판은 글로벌 공개 시장의 확률을 한국어로 정리하는 정보 사이트입니다.
           회원가입·입금·베팅·거래 기능이 없고, 예측시장이나 관련 사이트로 연결되는 링크도 제공하지 않습니다.
           확률은 결과를 보장하지 않으며 투자 판단의 근거가 될 수 없습니다. 자세한 내용은
           <a href="/disclaimer.html">면책 고지</a>를 참고하세요.</p>
         <p class="ip-small">이 페이지의 수치는 {E(data.get("updated_label") or "")} 기준 저장 데이터이며,
-          2시간마다 자동으로 새로 만들어집니다. 홈에서는 같은 이슈를 1분 단위 실시간 확률로 볼 수 있습니다.</p>
+          2시간마다 자동으로 새로 만들어집니다. 홈에서는 같은 이슈를 1분 단위 실시간 확률로 볼 수 있습니다.
+          {'Kalshi 항목은 공개 API가 브라우저 교차 출처 요청을 허용하지 않아 저장값을 그대로 표시합니다.' if it.get('source') == 'Kalshi' else ''}</p>
       </div>
 
       <p class="ip-actions">
@@ -663,9 +689,9 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
 # ---------------------------------------------------------------------------
 def render_hub(items: list, data: dict, slug_map: dict) -> str:
     canonical = f"{SITE}/issues/"
-    title = "이슈 전체 — 금리·코인·AI·글로벌 예측 확률 목록 | 예측판"
+    title = "이슈 전체 — 금리·코인·AI·글로벌 시장 확률 목록 | 예측판"
     desc = (
-        f"예측판이 정리한 글로벌 예측시장 이슈 {len(items)}개의 목록입니다. "
+        f"예측판이 정리한 시장 확률 이슈 {len(items)}개의 목록입니다. "
         "미국 금리, 비트코인·이더리움, AI 기업가치, 중동·유럽 이슈의 공개 확률과 24시간 변동을 한눈에 보고 상세 해설로 이동하세요."
     )
     ld = {
@@ -706,17 +732,17 @@ def render_hub(items: list, data: dict, slug_map: dict) -> str:
         <p class="ip-meta-line">
           <span>총 <b>{len(items)}개</b> 이슈</span>
           <span>데이터 기준 <b>{E(data.get("updated_label") or "")}</b></span>
-          <span>출처 <b>Polymarket 공개 데이터</b></span>
+          <span>출처 <b>Kalshi · Polymarket 공개 데이터</b></span>
         </p>
       </header>
 
-      <p>금리·코인·AI·글로벌 이슈마다 전 세계 예측시장 참가자들이 매긴 YES 확률과 24시간 변동을 정리했습니다.
+      <p>금리·코인·AI·글로벌 이슈마다 Kalshi·Polymarket 등 글로벌 공개 시장 참가자들이 매긴 YES 확률과 24시간 변동을 정리했습니다.
         이슈를 누르면 배경 해설, 1주·1개월 변화, 거래량·마감일, 원문 질문까지 담은 상세 페이지로 이동합니다.
         홈(<a href="/">yecheukpan.kr</a>)에서는 같은 이슈를 1분 단위 실시간 확률과 한줄 투표로 볼 수 있습니다.</p>
       {"".join(blocks)}
 
       <div class="ip-note">
-        <p><strong>안내</strong> · 예측판은 글로벌 예측시장에 공개된 확률을 한국어로 정리하는 정보 사이트입니다.
+        <p><strong>안내</strong> · 예측판은 글로벌 공개 시장의 확률을 한국어로 정리하는 정보 사이트입니다.
           베팅·거래·입금 기능이 없고, 예측시장이나 관련 사이트로 연결되는 링크도 제공하지 않습니다.
           확률은 결과를 보장하지 않습니다. <a href="/disclaimer.html">면책 고지</a></p>
       </div>

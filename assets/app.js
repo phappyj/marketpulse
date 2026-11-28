@@ -81,6 +81,9 @@
     "스포츠토토", "프로토", "온라인카지노", "레퍼럴", "추천인", "리퍼럴", "수익인증",
     "리딩방", "텔레그램", "오픈채팅", "카톡주세요", "카톡문의", "디엠주세요", "대리입금",
     "환전", "선입금", "고정수익", "원금보장", "100%수익", "폭리",
+    /* 접속 우회·가입 유도·입금 안내 금지 (해외 거래소 관련 법적 안전선) */
+    "vpn", "우회", "가입링크", "추천인코드", "초대코드", "입금방법", "지갑연결",
+    "배당", "픽공유", "텔레그램방",
     "씨발", "시발", "ㅅㅂ", "병신", "븅신", "좆", "지랄", "염병", "미친놈", "미친년",
     "개새끼", "새끼", "닥쳐", "꺼져"
   ];
@@ -169,7 +172,7 @@
   /* ---------------- state ---------------- */
   var state = {
     data: null,
-    byMid: {},      // Polymarket market id -> item
+    byMid: {},      // Polymarket market id -> item (Kalshi 항목은 mid 없음)
     cat: "all",
     q: "",
     openKey: null,
@@ -223,6 +226,31 @@
   function ctag(cat) {
     return '<span class="ctag ' + esc(cat) + '">' + (CAT_ICON[cat] || "") +
       esc(CAT_LABEL[cat] || "기타") + '</span>';
+  }
+
+  /* ---------- 출처 표기 (Kalshi / Polymarket) ---------- */
+  function sourceOf(it) { return (it && it.source) ? it.source : "Polymarket"; }
+
+  function srcTag(it) {
+    var s = sourceOf(it);
+    var tip = s === "Kalshi"
+      ? "미국 CFTC 인가 Kalshi 공개 시장 · 2시간마다 갱신되는 저장 데이터"
+      : "글로벌 공개 시장 Polymarket · 1분마다 실시간 갱신";
+    return '<span class="src-tag ' + (s === "Kalshi" ? "kalshi" : "pm") + '" title="' + esc(tip) + '">' +
+      esc(s) + '</span>';
+  }
+
+  /* Kalshi 거래량은 계약 수, Polymarket 은 금액이다. */
+  function contracts(n) {
+    if (n === null || n === undefined || n === "") return "—";
+    n = Number(n);
+    if (!isFinite(n)) return "—";
+    if (n >= 1e8) return (n / 1e8).toFixed(1).replace(/\.0$/, "") + "억계약";
+    if (n >= 1e4) return (n / 1e4).toFixed(1).replace(/\.0$/, "") + "만계약";
+    return Math.round(n).toLocaleString() + "계약";
+  }  function volTxt(n, it) { return sourceOf(it) === "Kalshi" ? contracts(n) : money(n); }
+  function heatOf(it) {
+    return (Number(it.volume_24h) || 0) + 0.01 * (Number(it.open_interest) || 0);
   }
   /* 변동 배지 — 있을 때만, 작게 */
   function deltaChip(v) {
@@ -302,7 +330,7 @@
     var items = (state.data.items || []).slice().sort(function (a, b) {
       var fa = a.featured ? 1 : 0, fb = b.featured ? 1 : 0;
       if (fa !== fb) return fb - fa;
-      return (Number(b.volume_24h) || 0) - (Number(a.volume_24h) || 0);
+      return heatOf(b) - heatOf(a);
     }).slice(0, 5);
     el.innerHTML = items.map(function (it, i) {
       return '<li data-hot-key="' + esc(it.key) + '" title="' + esc(it.title) + '">' +
@@ -330,11 +358,11 @@
   function cardHTML(it) {
     var yes = Math.max(0, Math.min(100, Number(it.yes) || 0));
     var dl = daysLeft(it.end_date);
-    var meta = '누적 ' + money(it.volume_total) + (dl ? ' <span class="sp">·</span> ' + esc(dl) : '');
+    var meta = '누적 ' + volTxt(it.volume_total, it) + (dl ? ' <span class="sp">·</span> ' + esc(dl) : '');
     return '' +
       '<article class="pcard" data-key="' + esc(it.key) + '" data-cat="' + esc(it.category) + '">' +
         '<div class="pcard-hit" role="button" tabindex="0" data-expand="' + esc(it.key) + '" aria-haspopup="dialog" aria-expanded="false" aria-label="' + esc(it.title) + ' 상세 보기">' +
-          '<div class="pcard-top">' + ctag(it.category) + deltaChip(it.change_24h) + viewChip(it.key) + cmtChip(it.key) + '</div>' +
+          '<div class="pcard-top">' + ctag(it.category) + srcTag(it) + deltaChip(it.change_24h) + viewChip(it.key) + cmtChip(it.key) + '</div>' +
           '<h3 class="pcard-t">' + esc(it.title) + '</h3>' +
           '<div class="pcard-glob">' +
             LB_GLOBAL +
@@ -393,6 +421,10 @@
     var yes = Math.max(0, Math.min(100, Number(it.yes) || 0));
     var dl = daysLeft(it.end_date);
     var n = state.cmtCount[it.key] || 0;
+    var w1 = (it.change_1w === null || it.change_1w === undefined)
+      ? '<b>—</b>'
+      : '<b class="' + (Number(it.change_1w) < 0 ? 'down' : 'up') + '">' +
+        (Number(it.change_1w) > 0 ? '+' : '') + pct(it.change_1w) + 'p</b>';
     return '' +
       '<h2 class="dd-title" id="dd-title">' + esc(it.title) + '</h2>' +
       '<div class="dd-glob">' +
@@ -404,11 +436,10 @@
         '<span class="gauge"><i style="width:' + Math.max(2, yes) + '%"></i></span>' +
       '</div>' +
       '<ul class="dd-facts">' +
-        '<li>24시간 거래량 <b>' + money(it.volume_24h) + '</b></li>' +
-        '<li>누적 거래량 <b>' + money(it.volume_total) + '</b></li>' +
+        '<li>24시간 거래량 <b>' + volTxt(it.volume_24h, it) + '</b></li>' +
+        '<li>누적 거래량 <b>' + volTxt(it.volume_total, it) + '</b></li>' +
         '<li>마감 <b>' + esc(shortDate(it.end_date)) + (dl ? ' · ' + esc(dl) : '') + '</b></li>' +
-        '<li>최근 1주 변동 <b class="' + (Number(it.change_1w) < 0 ? 'down' : 'up') + '">' +
-          (Number(it.change_1w) > 0 ? '+' : '') + pct(it.change_1w) + 'p</b></li>' +
+        '<li>최근 1주 변동 ' + w1 + '</li>' +
         '<li>조회 <b data-issue-views="' + esc(it.key) + '">' + (state.issueViews[it.key] || 0) + '</b></li>' +
       '</ul>' +
       '<div class="dd-vote">' +
@@ -424,7 +455,7 @@
       '</div>' +
       '<a class="dd-open" href="issues/' + esc(issueSlug(it.key)) + '.html">' +
         '📄 이 이슈 상세 페이지 열기 ↗ <span>해설·1개월 변화·판정 기준</span></a>' +
-      '<div class="dd-src">출처: Polymarket 공개 데이터' + (it.auto ? ' · 자동 선별 항목' : '') + '</div>' +
+      '<div class="dd-src">출처 · ' + esc(sourceOf(it)) + ' 공개 데이터' + (it.auto ? ' · 자동 선별 항목' : '') + '</div>' +
       '<div class="cmt-box" id="dd-cmt" data-cmt-box="' + esc(it.key) + '">' +
         '<div class="cmt-head">💬 이슈 댓글 <span class="n" data-cmt-count2="' + esc(it.key) + '">' + n + '</span></div>' +
         '<div class="cmt-list" data-cmt-list="' + esc(it.key) + '"></div>' +
@@ -841,6 +872,9 @@
      실시간 확률 — 브라우저가 Polymarket Gamma API를 직접 조회합니다.
      · 첫 화면은 data/markets.json으로 즉시 그리고(SEO·폴백), 곧바로 실시간 값으로 덮어씁니다.
      · 실패·타임아웃(5초)이면 저장된 값을 조용히 유지합니다(화면을 깨지 않음).
+     · Kalshi 공개 API는 교차 출처 요청을 허용하지 않아(Origin 헤더 → 403) 브라우저가
+       직접 부를 수 없습니다. Kalshi 항목은 실시간 조회에서 빼고 markets.json 값을 그대로
+       쓰미며, 카드의 출처 배지로 그 사실을 밝힙니다(2시간마다 갱신).
      ========================================================================== */
   var LIVE = {
     api: "https://gamma-api.polymarket.com",
@@ -866,6 +900,9 @@
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
 
   function liveRef(it) {
+    // Kalshi 는 브라우저 교차 출처 요청을 받지 않는다(Origin 헤더가 붙으면 403).
+    // 그래서 Kalshi 항목은 60초 실시간 조회 대상에서 빼고 data/markets.json 값을 유지한다.
+    if (it.source && it.source !== "Polymarket") return null;
     if (it.mid) return { key: "id", val: String(it.mid) };
     if (it.condition_id) return { key: "condition_ids", val: String(it.condition_id) };
     if (it.slug) return { key: "slug", val: String(it.slug) };
@@ -1065,7 +1102,7 @@
     var ss = ":" + pad2(d.getSeconds());
     if (stamp) {
       stamp.classList.add("live");
-      stamp.setAttribute("title", "브라우저가 폴리마켓 공개 API에서 직접 받은 시각 (KST) · 1분마다 자동 갱신");
+      stamp.setAttribute("title", "브라우저가 글로벌 공개 시장 API에서 직접 받은 시각 (KST) · 1분마다 자동 갱신");
     }
     if (lab) lab.textContent = "🟢 실시간";
     if (full) full.textContent = hh + ss;

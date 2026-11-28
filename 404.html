@@ -30,7 +30,7 @@
       <span class="logo-txt"><b>예측판</b><i>YECHEUKPAN</i></span>
     </a>
     <nav class="hd-tabs" aria-label="예측판 메뉴">
-      <a class="tab" href="/#/live">실시간 예측판</a>
+      <a class="tab" href="/#/live">오늘의 확률</a>
       <a class="tab" href="/#/talk">자유 수다방</a>
       <a class="tab" href="/#/guide">이슈 해설</a>
     </nav>
@@ -43,7 +43,7 @@
     <p class="page-meta">404 Not Found</p>
     <p id="nf-msg">주소가 바뀌었거나 삭제된 페이지입니다. 아래에서 다시 시작해 보세요.</p>
     <p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn primary" href="/#/live">실시간 예측판</a>
+      <a class="btn primary" href="/#/live">오늘의 확률</a>
       <a class="btn" href="/#/talk">자유 수다방</a>
       <a class="btn" href="/issues/">이슈 전체 보기</a>
       <a class="btn ghost" href="/#/guide">이슈 해설</a>
@@ -85,7 +85,7 @@
   if (title) title.textContent = "주소가 바뀌었습니다";
   if (msg) {
     msg.innerHTML = "이 주소는 <b>" + (dest.indexOf("/#/") === 0
-      ? (dest.indexOf("talk") > -1 ? "자유 수다방" : dest.indexOf("guide") > -1 ? "이슈 해설" : "실시간 예측판")
+      ? (dest.indexOf("talk") > -1 ? "자유 수다방" : dest.indexOf("guide") > -1 ? "이슈 해설" : "오늘의 확률")
       : "이슈 전체 목록") + "</b>으로 옮겨졌습니다. 잠시 후 자동으로 이동합니다. " +
       '<a href="' + dest + '">바로 이동</a>';
   }

@@ -1,6 +1,6 @@
 # 예측판 YECHEUKPAN
 
-글로벌 예측시장(Polymarket)의 **공개 확률 데이터를 한국어 해설과 함께 보여주고, 이슈마다 한줄 투표와 댓글로 의견을 모으는 정보 커뮤니티**입니다.
+**시장이 매긴 확률로 읽는 경제·코인·AI 데이터 사이트**입니다. 미국 CFTC 인가 **Kalshi**와 Polymarket 등 글로벌 공개 시장의 확률을 한국어 해설과 함께 보여주고, 이슈마다 한줄 투표와 댓글로 의견을 모읍니다.
 미국 금리 결정, 비트코인 가격 경로, AI 기업가치, 중동·유럽 지정학 리스크를 카드로 보여주고, 그 위에
 `👍 YES 간다 / 👎 NO 꺾인다` 투표와 자유 수다방을 얹었습니다. 베팅·거래 기능은 제공하지 않습니다.
 
@@ -33,8 +33,9 @@ assets/community.js        자유 수다방 (목록 · 글쓰기 · 상세 · �
 assets/favicon.svg         파비콘
 data/markets.json          사이트가 읽는 데이터 (자동 생성)
 db/schema.sql              Supabase 스키마 (테이블 · RLS · RPC)
-scripts/fetch_markets.py   Polymarket Gamma API → markets.json (표준 라이브러리만 사용)
-scripts/build_pages.py     문서 페이지(about/privacy/terms/disclaimer/404) 생성
+scripts/fetch_markets.py   Kalshi · Polymarket 공개 API → markets.json (표준 라이브러리만 사용)
+scripts/build_issue_pages.py  이슈별 SEO 페이지 · sitemap.xml 생성
+scripts/build_pages.py     문서 페이지(about/privacy/terms/disclaimer) 생성 (404.html은 직접 관리)
 .github/workflows/update-markets.yml   매 2시간 자동 갱신 워크플로
 ```
 
@@ -89,7 +90,8 @@ dict(
 - 베팅·거래·입금·회원가입 기능 **없음**, 예측시장/베팅 사이트로 가는 **링크·제휴 코드 없음**
 - 국내 정치·선거 관련 마켓은 수집 단계에서 제외 (`KOREA_BLOCK`)
 - 커뮤니티: 도박·사설 토토·리딩방·텔레그램·레퍼럴·욕설은 금칙어 필터로 차단, 신고 3회 시 자동 숨김
-- 모든 카드에 해설 필수, 출처(Polymarket 공개 API) 명시
+- 모든 카드에 해설 필수, 카드마다 **출처 배지(Kalshi / Polymarket)** 표시
+- Kalshi는 공개 API가 브라우저 교차 출처 요청을 허용하지 않아(Origin 헤더 → 403) 60초 실시간 조회에서 제외하고 저장값을 유지한다
 - `about` / `privacy` / `terms` / `disclaimer` 페이지로 정보 제공 목적과 한계를 고지
 
 ## 로컬 미리보기

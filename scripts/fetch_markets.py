@@ -4,8 +4,13 @@
 예측판(YECHEUKPAN) 데이터 갱신 스크립트
 =========================================
 
-Polymarket의 공개 Gamma API에서 경제·금리, 코인, AI·빅테크, 글로벌 이슈 마켓을
-가져와 한국어 큐레이션 데이터(data/markets.json)를 만든다.
+두 곳의 공개 API에서 경제·금리, 코인, AI·빅테크, 글로벌 이슈 마켓을 가져와
+한국어 큐레이션 데이터(data/markets.json)를 만든다.
+
+- Polymarket 공개 Gamma API(큐레이션 규칙 WATCH + 자동 선별)
+- Kalshi 공개 Trade API(미국 CFTC 인가 예측시장, API 키 없이 조회 가능)
+  → KALSHI_SERIES 에 적어 둔 주요 시리즈에서 거래량·미결제 약정이 큰 마켓을 골라
+    한국어 제목·해설로 옮긴다. 항목마다 source(Kalshi/Polymarket)를 남긴다.
 
 - 표준 라이브러리만 사용한다(서버·유료 API 없음, GitHub Actions에서 무료 실행).
 - 큐레이션 규칙(WATCH)에 매칭되는 마켓을 우선 채우고, 매칭이 모자라면
@@ -38,7 +43,15 @@ OUT_PATH = ROOT / "data" / "markets.json"
 KST = timezone(timedelta(hours=9))
 ET = ZoneInfo("America/New_York")   # 예측시장 마감은 미국 동부시간 기준으로 표기한다.
 API = "https://gamma-api.polymarket.com"
-USER_AGENT = "YecheukpanBot/1.0 (Korean prediction-market info site; contact: site owner)"
+# Kalshi Trade API — 공개 마켓 데이터는 API 키 없이 조회된다(계정·주문 API만 인증 필요).
+# 두 호스트는 같은 응답을 주며, 앞의 호스트가 막히면 뒤의 호스트로 재시도한다.
+KALSHI_BASES = (
+    "https://external-api.kalshi.com/trade-api/v2",
+    "https://api.elections.kalshi.com/trade-api/v2",
+)
+SOURCE_POLYMARKET = "Polymarket"
+SOURCE_KALSHI = "Kalshi"
+USER_AGENT = "YecheukpanBot/1.0 (Korean market-probability info site; contact: site owner)"
 
 # 카테고리 정의 (프론트엔드 탭과 1:1 대응)
 CATEGORIES = [
@@ -72,7 +85,7 @@ GOSSIP_DROPPED: list[str] = []
 # 자동 선별에서 제외할 스포츠·연예·SNS 잡음
 NOISE_BLOCK = re.compile(
     r"(\bvs\.?\b|\bO/U\b|\bSpread:|win on \d{4}-\d{2}-\d{2}|"
-    r"UFC|NBA|NFL|MLB|NHL|ATP|WTA|Grand Prix|Premier League|Champions League|"
+    r"\b(?:UFC|NBA|NFL|MLB|NHL|ATP|WTA)\b|Grand Prix|Premier League|Champions League|"
     r"La Liga|Serie A|Super Bowl|Ballon d'Or|tweets? from|"
     r"next (head coach|manager)|American Idol|Grammy|Oscar)",
     re.I,
@@ -115,7 +128,7 @@ MONTHS_EN = {m: i for i, m in enumerate(
 WATCH = [
     # ---------------- 경제·금리 ----------------
     dict(
-        key="fed-dec-hike", cat="economy", rank=1,
+        key="fed-dec-hike", cat="economy", rank=1, topic="fed-dec",
         q=r"increase interest rates by 25 bps after the December 2026 meeting",
         title="12월 FOMC, 기준금리 0.25%p 인상?",
         explain=(
@@ -741,6 +754,9 @@ def format_item(rule: dict, row: dict) -> dict:
         "rank": rule.get("rank", 90),
         "no_feature": bool(rule.get("no_feature")),
         "title": rule["title"],
+        "source": SOURCE_POLYMARKET,
+        "source_key": "polymarket",
+        "open_interest": None,
         # 브라우저(app.js)가 Gamma API를 직접 호출해 실시간 확률을 덮어쓸 때 쓰는 식별자.
         "mid": row["mid"],
         "slug": row.get("slug", ""),
@@ -767,11 +783,13 @@ def format_item(rule: dict, row: dict) -> dict:
 def score(item: dict) -> float:
     """TOP 3 선정 점수: 거래량 + 확률이 팽팽할수록 가중."""
     tightness = 1 - abs(item["yes"] - 50) / 50          # 0(한쪽 쏠림) ~ 1(반반)
-    return item["volume_24h"] * (1 + 0.8 * tightness)
+    return (float(item.get("volume_24h") or 0) + 0.01 * float(item.get("open_interest") or 0)) \
+        * (1 + 0.8 * tightness)
 
 
 def pick_featured(items: list[dict], limit: int = 3) -> list[str]:
-    ranked = sorted(items, key=lambda it: (not it.get("no_feature"), -score(it)))
+    # 해설이 붙은 큐레이션 항목을 먼저, 자동 선별(auto) 항목은 뒤로 — TOP 3는 해설 품질 우선.
+    ranked = sorted(items, key=lambda it: (bool(it.get("auto")), not it.get("no_feature"), -score(it)))
     ranked = [it for it in ranked if not it.get("no_feature")]
     chosen, per_cat = [], {}
     # 1차: 카테고리 다양성 확보
@@ -788,7 +806,646 @@ def pick_featured(items: list[dict], limit: int = 3) -> list[str]:
             break
         if item["key"] not in chosen:
             chosen.append(item["key"])
+
+    # 3차: TOP 3가 한 출처로만 채워졌으면, 다른 출처(보통 Kalshi) 항목 하나를 끼워
+    #      '여러 글로벌 지표를 종합한다'는 사실이 첫 화면에서 보이게 한다.
+    by_key = {it["key"]: it for it in ranked}
+    chosen_items = [by_key[k] for k in chosen if k in by_key]
+    sources = {it.get("source") for it in chosen_items}
+    if len(chosen_items) >= 2 and len(sources) == 1:
+        floor = score(chosen_items[-1]) * 0.25
+        alts = [it for it in ranked
+                if it["key"] not in chosen and it.get("source") not in sources and score(it) >= floor]
+        if alts:
+            alt = max(alts, key=score)
+            # 자동 선별 항목이 있으면 그 자리를 먼저 내주고, 없으면 마지막 자리를 바꾼다.
+            auto_pos = next((i for i in range(len(chosen) - 1, -1, -1)
+                             if by_key.get(chosen[i], {}).get("auto")), None)
+            chosen[auto_pos if auto_pos is not None else len(chosen) - 1] = alt["key"]
     return chosen
+
+
+# ---------------------------------------------------------------------------
+# Kalshi (미국 CFTC 인가 예측시장) 공개 데이터
+# ---------------------------------------------------------------------------
+# Kalshi 는 시리즈(series) 단위로 마켓을 열고, 시리즈마다 성격이 다르다.
+#  · pick="winner" : 후보가 여럿인 경쟁 마켓(FOMC 결과, 최고 AI 모델, 차기 CEO) → 확률 1위
+#  · pick="ladder" : "몇 % 이상" 처럼 임계값이 계단으로 놓인 마켓 → 확률이 50%에 가장 가까운 칸
+#  · pick="bucket" : 가격 구간 마켓 → 확률이 가장 높은 구간
+# title 함수가 None 을 돌려주면 일반 번역(auto_title)으로 물러난다.
+KALSHI_PER_CATEGORY = 3      # 카테고리당 Kalshi 항목 수(기존 Polymarket 4개에 더한다)
+KALSHI_PAGE_LIMIT = 200      # /events 한 번에 최대 200개
+KALSHI_MAX_PAGES = 10        # 최대 2,000개 이벤트까지 훑는다
+KALSHI_TOP_N = 40            # 후보 상위 40개 이벤트
+KALSHI_MIN_VOLUME_24H = 1000  # 24시간 거래 계약 수가 이보다 적으면 제외
+KALSHI_MAX_SPREAD = 0.10     # 매수·매도 호가 차이가 10%p 이하일 때만 중간값을 확률로 사용
+KALSHI_MIN_HORIZON_H = 48    # 15분·1시간짜리 초단기 마켓은 카드·SEO 페이지로 쓰지 않는다
+
+# Kalshi 카테고리 → 예측판 카테고리 (여기에 없는 Sports·Elections·Entertainment 등은 제외)
+KALSHI_CATEGORY_MAP = {
+    "Economics": "economy",
+    "Financials": "crypto",
+    "Crypto": "crypto",
+    "Science and Technology": "ai",
+    "Companies": "ai",
+    "World": "global",
+    "Politics": "global",
+}
+
+
+def k_usd(raw: str) -> str:
+    try:
+        n = round(float(str(raw).replace(",", "").replace("$", "")))
+    except (TypeError, ValueError):
+        return str(raw)
+    return f"${n:,}"
+
+
+def k_num(raw: str) -> str:
+    """'3.5%' / '0' 같은 임계값 표기를 그대로 다듬는다."""
+    return str(raw).strip()
+
+
+def k_period(ev: dict) -> str:
+    """'CPI YoY in November' / 'In Nov 2026' → '11월'."""
+    text = f"{ev.get('title', '')} {ev.get('sub_title', '')}"
+    m = re.search(r"\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+                  r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b",
+                  text, re.I)
+    if not m:
+        return ""
+    name = m.group(1).lower()[:3]
+    num = next((v for full, v in MONTHS_EN.items() if full[:3] == name), 0)
+    return f"{num}월" if num else ""
+
+
+def k_quarter(ev: dict) -> str:
+    """'Q4 2026' → '2026년 4분기'."""
+    m = re.search(r"Q([1-4])\s*(\d{4})", f"{ev.get('title', '')} {ev.get('sub_title', '')}")
+    return f"{m.group(2)}년 {m.group(1)}분기" if m else ""
+
+
+def k_bucket(sub: str) -> str:
+    """'20,000 to 24,999.99' → '$20,000~$25,000 구간'."""
+    m = re.match(r"\s*([\d,.]+)\s*(?:to|-)\s*([\d,.]+)", sub)
+    if m:
+        return f"{k_usd(m.group(1))}~{k_usd(m.group(2))} 구간"
+    m = re.match(r"\s*([\d,.]+)\s*or (?:below|less)", sub, re.I)
+    if m:
+        return f"{k_usd(m.group(1))} 이하"
+    m = re.match(r"\s*([\d,.]+)\s*or (?:above|more)", sub, re.I)
+    if m:
+        return f"{k_usd(m.group(1))} 이상"
+    return sub
+
+
+def k_above(sub: str) -> str:
+    """'Above $99,999.99' → '$100,000', 'Above 3.5%' → '3.5%', 'Above 25,000' → '25,000'."""
+    m = re.match(r"\s*above\s+(.+)$", sub, re.I)
+    if not m:
+        return k_num(sub)
+    val = m.group(1).strip()
+    return k_usd(val) if val.startswith("$") else val
+
+
+def k_below(sub: str) -> str:
+    m = re.match(r"\s*below\s+(.+)$", sub, re.I)
+    if not m:
+        return k_num(sub)
+    val = m.group(1).strip()
+    return k_usd(val) if val.startswith("$") else val
+
+
+def k_date_str(text: str) -> str:
+    """'Jul 1, 2028' → '2028년 7월 1일', '2028' → '2028년'."""
+    text = text.strip()
+    if re.fullmatch(r"\d{4}", text):
+        return f"{text}년"
+    m = re.search(r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s*(\d{4})", text)
+    if not m:
+        return text
+    num = next((v for full, v in MONTHS_EN.items() if full[:3] == m.group(1).lower()[:3]), 0)
+    return f"{m.group(3)}년 {num}월 {int(m.group(2))}일" if num else text
+
+
+def k_date_key(sub: str):
+    """'Before Jul 1, 2028' → (2028, 7, 1), 'Before 2028' → (2028, 12, 31)."""
+    m = re.search(r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s*(\d{4})", sub)
+    if m:
+        num = next((v for full, v in MONTHS_EN.items() if full[:3] == m.group(1).lower()[:3]), 0)
+        return (int(m.group(3)), num, int(m.group(2)))
+    m = re.search(r"\b(\d{4})\b", sub)
+    return (int(m.group(1)), 12, 31) if m else (9999, 0, 0)
+
+
+def k_before(sub: str) -> str:
+    """'Before Jul 1, 2028' → '2028년 7월 1일'. 그 외에는 원문 그대로."""
+    m = re.match(r"\s*before\s+(.+)$", sub, re.I)
+    return k_date_str(m.group(1)) if m else k_num(sub)
+
+
+def k_kr_date(ev: dict) -> str:
+    """이벤트 부제 'On Dec 9, 2026' → '2026년 12월 9일'."""
+    text = f"{ev.get('sub_title', '')} {ev.get('title', '')}"
+    m = re.search(r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s*(\d{4})", text)
+    if not m:
+        return k_period(ev)
+    num = next((v for full, v in MONTHS_EN.items() if full[:3] == m.group(1).lower()[:3]), 0)
+    return f"{m.group(3)}년 {num}월 {int(m.group(2))}일" if num else k_period(ev)
+
+
+# 시리즈별 한국어 제목·해설 템플릿. 표에 없는 시리즈는 자동 번역(auto_title)으로 넘긴다.
+#  · pick="winner" : 후보가 여럿인 경쟁 마켓(FOMC 결과, 최고 AI 모델) → 확률 1위
+#  · pick="ladder" : "몇 % 이상" 임계값 계단 → 확률이 50%에 가장 가까운 칸
+#  · pick="bucket" : 가격 구간 마켓 → 확률이 가장 높은 구간
+#  · pick="soonest": "언제까지" 누적 사다리 → 확률이 두 자릿수가 되는 가장 이른 시점
+KALSHI_SERIES = [
+    # ---------------- 경제·금리 ----------------
+    dict(
+        ticker="KXFEDDECISION", cat="economy", pick="winner", topic="fed-dec",
+        title=lambda ev, mk: (lambda o: f"{k_period(ev)} FOMC, {o}" if o else None)({
+            "Hike 25bps": "금리 0.25%p 인상?", "Fed maintains rate": "금리 동결?",
+            "Cut 25bps": "금리 0.25%p 인하?", "Hike >25bps": "0.25%p 넘는 인상?",
+            "Cut >25bps": "0.25%p 넘는 인하?",
+        }.get((mk.get("yes_sub_title") or "").strip())),
+        explain=("미 연준(FOMC)이 이번 회의에서 기준금리를 어느 폭으로 움직일지를 두고 시장 참가자들이 매긴 확률입니다. "
+                 "미국 CFTC가 인가한 Kalshi에서 거래되는 마켓으로, 금리·달러·주가 기대가 한 줄로 모이는 지표입니다."),
+        watch=("인상 확률이 90%를 넘으면 결과가 이미 가격에 반영된 '재료 소진' 구간에 가깝습니다. "
+               "동결·인하 확률이 함께 오르는지 보면 시장이 연준의 다음 수를 어떻게 보는지 알 수 있습니다."),
+    ),
+    dict(
+        ticker="KXFED", cat="economy", pick="ladder",
+        title=lambda ev, mk: f"{k_period(ev)} FOMC 뒤 기준금리 {k_above(mk.get('yes_sub_title') or '')} 이상?",
+        explain=("FOMC 직후 연방기금금리 상단이 특정 수준을 넘는지를 묻는 마켓입니다. "
+                 "임계값별 확률을 늘어놓으면 시장이 그리는 금리 분포가 보입니다."),
+        watch=("여러 임계값 가운데 확률이 50%에 가장 가까운 지점이 시장의 중심 예상입니다. "
+               "그 값이 회의 때마다 어디로 이동하는지가 핵심입니다."),
+    ),
+    dict(
+        ticker="KXCPIYOY", cat="economy", pick="ladder",
+        title=lambda ev, mk: f"{k_period(ev)} 미국 CPI 상승률 {k_above(mk.get('yes_sub_title') or '')} 초과?",
+        explain=("미국 소비자물가(CPI) 상승률이 발표 기준으로 특정 수준을 넘는지를 묻는 마켓입니다. "
+                 "금리 기대가 CPI 발표 하루에 크게 흔들리기 때문에 매크로 투자자들이 주목합니다."),
+        watch=("확률이 50%에 가까운 임계값이 시장의 물가 전망입니다. 발표 전후로 같은 임계값의 확률이 "
+               "얼마나 움직였는지 비교해 보세요."),
+    ),
+    dict(
+        ticker="KXRATECUTCOUNT", cat="economy", pick="winner",
+        title=lambda ev, mk: (lambda n: f"올해 연준 금리 인하, {n}회?" if n is not None else None)(
+            (lambda m: m.group(1) if m else None)(
+                re.match(r"\s*Exactly\s+(\d+)\s+cuts?", (mk.get("yes_sub_title") or ""), re.I))),
+        explain=("연준이 한 해 동안 금리를 몇 번 내릴지를 묻는 마켓입니다. "
+                 "단일 회의 결과를 넘어 연간 금리 경로 전체를 하나의 숫자로 요약합니다."),
+        watch=("0회 확률이 98%라면 연내 인하 기대가 사실상 사라진 상태입니다. "
+               "이 확률이 내려오면 위험자산 심리가 살아나는 신호로 읽을 수 있습니다."),
+    ),
+    dict(
+        ticker="KXPAYROLLS", cat="economy", pick="ladder",
+        title=lambda ev, mk: f"{k_period(ev)} 미국 고용, {k_above(mk.get('yes_sub_title') or '')}명 초과 증가?",
+        explain=("미국 비농업 고용지표에서 몇 명 이상의 일자리가 늘었는지를 묻는 마켓입니다. "
+                 "고용은 연준이 금리를 정할 때 보는 두 축(물가·고용) 중 하나입니다."),
+        watch=("임계값 여러 개 중 확률이 50% 근처인 지점이 시장의 예상 고용치입니다. "
+               "발표 뒤 이 확률이 어떻게 재배치되는지가 다음 금리 기대를 보여 줍니다."),
+    ),
+    dict(
+        ticker="KXGDP", cat="economy", pick="ladder",
+        title=lambda ev, mk: f"{k_quarter(ev)} 미국 GDP 성장률 {k_above(mk.get('yes_sub_title') or '')} 초과?",
+        explain=("미국 실질 GDP 성장률이 분기 기준으로 특정 수준을 넘는지를 묻는 마켓입니다. "
+                 "경기 둔화·연착륙 논쟁을 숫자로 확인할 수 있습니다."),
+        watch=("2%대 임계값의 확률이 50%를 크게 벗어나면 시장이 경기 방향을 한쪽으로 굳혔다고 볼 수 있습니다."),
+    ),
+    dict(
+        ticker="KXU3", cat="economy", pick="ladder",
+        title=lambda ev, mk: f"{k_period(ev)} 미국 실업률 {k_above(mk.get('yes_sub_title') or '')} 초과?",
+        explain=("미국 실업률(U-3)이 특정 수준을 넘는지를 묻는 마켓입니다. 고용시장이 식는 속도를 확률로 보여 줍니다."),
+        watch=("실업률 임계값 확률이 한 달 새 위로 이동하면 경기 둔화 우려가 커진 것으로 읽습니다."),
+    ),
+
+    # ---------------- 코인·금융 ----------------
+    dict(
+        ticker="KXBTCY", cat="crypto", pick="bucket",
+        title=lambda ev, mk: f"{k_kr_date(ev)} 비트코인 가격, {k_bucket(mk.get('yes_sub_title') or '')}?",
+        explain=("연말 시점 비트코인 가격이 어느 구간에 있을지를 묻는 Kalshi 마켓입니다. "
+                 "구간별 확률을 모두 더하면 시장이 그리는 가격 분포가 됩니다."),
+        watch=("확률이 가장 높은 구간이 시장의 중심값입니다. 한 달 전과 비교해 분포가 위·아래 어느 쪽으로 "
+               "이동했는지 보세요."),
+    ),
+    dict(
+        ticker="KXBTCMAXY", cat="crypto", pick="ladder",
+        title=lambda ev, mk: f"비트코인, 연말까지 {k_above(mk.get('yes_sub_title') or '')} 돌파?",
+        explain=("비트코인이 연말까지 어디까지 오를지를 임계값별로 묻는 마켓입니다. "
+                 "가장 가까운 임계값의 확률이 곧 '연내 추가 상승 가능성'을 시장이 보는 정도입니다."),
+        watch=("가장 낮은 임계값의 확률이 1%대라면 시장은 연내 큰 반등을 거의 기대하지 않는다는 뜻입니다."),
+    ),
+    dict(
+        ticker="KXBTCMINY", cat="crypto", pick="ladder",
+        title=lambda ev, mk: f"비트코인, 연내 {k_below(mk.get('yes_sub_title') or '')} 아래로?",
+        explain=("비트코인이 연말까지 어디까지 내려갈지를 묻는 마켓입니다. 하방 위험을 확률로 보여 줍니다."),
+        watch=("확률이 50%에 가까운 임계값이 시장이 보는 최저점입니다. 이 값이 위로 올라가면 하락 위험을 "
+               "더 크게 본다는 뜻입니다."),
+    ),
+    dict(
+        ticker="KXETHY", cat="crypto", pick="bucket",
+        title=lambda ev, mk: f"{k_kr_date(ev)} 이더리움 가격, {k_bucket(mk.get('yes_sub_title') or '')}?",
+        explain=("연말 시점 이더리움 가격이 어느 구간에 있을지를 묻는 Kalshi 마켓입니다. "
+                 "비트코인 마켓과 나란히 보면 알트코인의 상대 강도를 가늠할 수 있습니다."),
+        watch=("확률이 가장 높은 구간이 시장의 중심값입니다. 비트코인 분포와 비교해 어느 쪽으로 더 쏠려 있는지 "
+               "확인해 보세요."),
+    ),
+    dict(
+        ticker="KXETHMAXY", cat="crypto", pick="ladder",
+        title=lambda ev, mk: f"이더리움, 연말까지 {k_above(mk.get('yes_sub_title') or '')} 돌파?",
+        explain=("이더리움이 연말까지 어디까지 오를지를 임계값별로 묻는 마켓입니다."),
+        watch=("가장 낮은 임계값의 확률이 한 자릿수면 시장은 연내 큰 반등을 거의 보지 않는다는 뜻입니다."),
+    ),
+    dict(
+        ticker="KXETHMINY", cat="crypto", pick="ladder",
+        title=lambda ev, mk: f"이더리움, 연내 {k_below(mk.get('yes_sub_title') or '')} 아래로?",
+        explain=("이더리움이 연말까지 어디까지 내려갈지를 묻는 마켓입니다."),
+        watch=("확률이 50%에 가까운 임계값이 시장이 보는 최저점입니다."),
+    ),
+
+    # ---------------- AI·테크 ----------------
+    dict(
+        ticker="KXLLM1", cat="ai", pick="winner",
+        title=lambda ev, mk: f"{k_kr_date(ev)} 기준 최고 AI 모델은 {k_vendor(mk.get('yes_sub_title') or '')}?",
+        explain=("월말 또는 연말 기준으로 가장 성능이 좋은 AI를 고르는 Kalshi 마켓입니다. "
+                 "AI 모델 순위는 빅테크 주가와 AI 밸류에이션 논쟁에 바로 연결됩니다."),
+        watch=("1위 확률이 한 회사로 쏠릴수록 경쟁 구도가 굳어졌다는 뜻입니다. "
+               "2위 확률의 변화가 다음 분기 판도를 보여 줍니다."),
+    ),
+    dict(
+        ticker="KXTOPMODEL", cat="ai", pick="winner",
+        title=lambda ev, mk: f"{k_period(ev)} 최고 AI 모델은 {k_vendor(mk.get('yes_sub_title') or '')}?",
+        explain=("이번 달 가장 성능이 좋은 AI 모델을 고르는 마켓입니다. 모델 순위 변동은 AI 경쟁 구도를 "
+                 "가장 빠르게 보여 주는 지표입니다."),
+        watch=("1위 확률이 80%를 넘으면 경쟁이 잠시 굳은 상태입니다. 새 모델 발표가 나오면 확률이 급하게 "
+               "재배치됩니다."),
+    ),
+    dict(
+        ticker="KXCODINGMODEL", cat="ai", pick="winner",
+        title=lambda ev, mk: f"최고 AI 코딩 모델은 {k_vendor(mk.get('yes_sub_title') or '')}?",
+        explain=("코딩·개발 작업에서 가장 앞선 AI 모델을 고르는 마켓입니다. 개발자 도구 시장의 판도를 보여 줍니다."),
+        watch=("1위 확률과 2위 확률의 격차가 좁아지는지가 경쟁의 방향을 알려 줍니다."),
+    ),
+    dict(
+        ticker="KXSPACEXCOUNT", cat="ai", pick="ladder",
+        title=lambda ev, mk: f"스페이스X 올해 발사 횟수, {k_above(mk.get('yes_sub_title') or '')}회 이상?",
+        explain=("스페이스X가 올해 몇 번 발사할지를 묻는 마켓입니다. 발사 횟수는 위성 인터넷·우주 수송 사업의 "
+                 "진행 속도를 보여 주는 지표입니다."),
+        watch=("누적 발사 횟수가 임계값에 가까워질수록 확률이 0 또는 100으로 빠르게 수렴합니다."),
+    ),
+    dict(
+        ticker="KXOPENSHARE", cat="ai", pick="ladder",
+        title=lambda ev, mk: f"오픈AI 시장점유율 {k_above(mk.get('yes_sub_title') or '')} 이상?",
+        explain=("오픈AI가 AI 시장에서 차지하는 점유율이 특정 수준을 넘는지를 묻는 마켓입니다."),
+        watch=("점유율 임계값 확률이 아래로 내려가면 경쟁사가 그만큼 몫을 가져간다는 뜻입니다."),
+    ),
+
+    # ---------------- 글로벌 ----------------
+    dict(
+        ticker="KXHORMUZNORM", cat="global", pick="soonest",
+        title=lambda ev, mk: f"호르무즈 해협 통항, {k_before(mk.get('yes_sub_title') or '')}까지 정상화?",
+        explain=("호르무즈 해협 통항이 언제 정상으로 돌아올지를 시점별로 묻는 Kalshi 마켓입니다. "
+                 "전 세계 원유·LNG 물동량의 길목이라 유가·해운 운임에 직접 영향을 줍니다."),
+        watch=("확률이 처음으로 두 자릿수가 되는 시점이 시장이 보는 정상화의 하한선입니다."),
+    ),
+    dict(
+        ticker="KXUSAIRANAGREEMENT", cat="global", pick="soonest",
+        title=lambda ev, mk: f"미국-이란 핵 합의, {k_before(mk.get('yes_sub_title') or '')}까지?",
+        explain=("미국과 이란의 핵 합의가 언제까지 성사될지를 시점별로 묻는 마켓입니다. "
+                 "중동 리스크와 유가에 직접 연결되는 이슈입니다."),
+        watch=("합의 확률이 처음으로 두 자릿수가 되는 시점이 시장이 보는 가장 이른 타결 시기입니다."),
+    ),
+    dict(
+        ticker="KXTRUMPOUT27", cat="global", pick="soonest",
+        title=lambda ev, mk: f"트럼프, {k_before(mk.get('yes_sub_title') or '')} 전 대통령직 이탈?",
+        explain=("도널드 트럼프 미국 대통령이 언제까지 직에서 물러날지를 시점별로 묻는 마켓입니다. "
+                 "정치적 꼬리 위험을 가격으로 보여 주는 대표적인 사례입니다."),
+        watch=("확률이 처음으로 두 자릿수가 되는 시점이 시장이 보는 가장 이른 이탈 시기입니다."),
+    ),
+    dict(
+        ticker="KXGOVTSHUTDOWN", cat="global", pick="winner",
+        title=lambda ev, mk: f"미국 정부 셧다운, {k_kr_date(ev)}?",
+        explain=("미국 연방정부가 다시 셧다운(일시 업무정지)되는지를 묻는 마켓입니다. "
+                 "정부 지출 협상과 경제지표 발표 일정에 직접 영향을 줍니다."),
+        watch=("확률이 30%를 넘나드는지가 협상 교착의 정도를 보여 줍니다."),
+    ),
+]
+
+VENDOR_KR = {
+    "Gemini": "구글 Gemini", "ChatGPT": "오픈AI ChatGPT", "Claude": "앤트로픽 Claude",
+    "Grok": "xAI Grok", "Muse": "메타 Muse", "Qwen": "알리바바 Qwen",
+    "Ernie": "바이두 Ernie", "DeepSeek": "딥시크", "Llama": "메타 Llama",
+}
+
+
+def k_vendor(sub: str) -> str:
+    return VENDOR_KR.get(sub.strip(), sub.strip())
+
+
+def kalshi_price(mk: dict):
+    """YES 확률(0~1). 호가 중간값이 있으면 그것을, 없으면 마지막 체결가를 쓴다."""
+    def num(*keys):
+        for key in keys:
+            v = mk.get(key)
+            if v in (None, ""):
+                continue
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    bid = num("yes_bid_dollars", "yes_bid")
+    ask = num("yes_ask_dollars", "yes_ask")
+    if bid is not None and bid > 1:   # 구 응답은 센트 단위(0~100)다.
+        bid = bid / 100.0
+    if ask is not None and ask > 1:
+        ask = ask / 100.0
+    # 호가 차이가 좁을 때만 중간값을 시장 확률로 쓰고, 넓으면 마지막 체결가로 물러난다.
+    if (bid is not None and ask is not None and ask > 0 and ask >= bid
+            and ask - bid <= KALSHI_MAX_SPREAD and 0 <= bid < 1 and 0 < ask < 1):
+        return (bid + ask) / 2
+    last = num("last_price_dollars", "last_price")
+    if last is None:
+        return None
+    if last > 1:
+        last = last / 100.0
+    return last if 0 < last < 1 else None
+
+
+def kalshi_volume(mk: dict, key: str, alt: str) -> float:
+    for k in (key, alt):
+        v = mk.get(k)
+        if v in (None, ""):
+            continue
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
+def kalshi_heat(mk: dict) -> float:
+    """관심도 점수 — 24시간 거래량에 미결제 약정을 조금 얹는다(장기 마켓도 걸러지게)."""
+    return kalshi_volume(mk, "volume_24h_fp", "volume_24h") + 0.01 * kalshi_volume(mk, "open_interest_fp", "open_interest")
+
+
+def kalshi_ok(mk: dict) -> bool:
+    if (mk.get("status") or "active") != "active":
+        return False
+    if (mk.get("market_type") or "binary") != "binary":
+        return False
+    p = kalshi_price(mk)
+    return p is not None and 0.01 < p < 0.99
+
+
+def pick_kalshi_market(ev: dict, mode: str):
+    rows = [mk for mk in (ev.get("markets") or []) if kalshi_ok(mk)]
+    if not rows:
+        return None
+    if mode == "ladder":
+        return min(rows, key=lambda mk: (abs(kalshi_price(mk) * 100 - 50), -kalshi_heat(mk)))
+    if mode == "soonest":
+        # "언제까지" 형 누적 사다리 — 확률이 두 자릿수가 되는 가장 이른 시점을 고른다.
+        near = [mk for mk in rows if kalshi_price(mk) >= 0.10]
+        pool = near or rows
+        return min(pool, key=lambda mk: (k_date_key(mk.get("yes_sub_title") or ""), -kalshi_price(mk)))
+    return max(rows, key=lambda mk: (kalshi_price(mk), kalshi_heat(mk)))
+
+
+def build_kalshi_item(cfg, ev: dict, mk: dict, rank: int) -> dict | None:
+    p = kalshi_price(mk)
+    if p is None:
+        return None
+    sub = (mk.get("yes_sub_title") or "").strip()
+    title = None
+    if cfg:
+        try:
+            title = cfg["title"](ev, mk)
+        except (KeyError, TypeError, ValueError):
+            title = None
+    title = (title or "").strip()
+    if not title:
+        title = auto_title({"question": mk.get("title") or "", "option": sub})
+    question = (mk.get("title") or "").strip()
+    if not question:
+        return None
+
+    cat_id = (cfg or {}).get("cat") or KALSHI_CATEGORY_MAP.get(ev.get("category") or "") or "global"
+    cat_label = next((c["label"] for c in CATEGORIES if c["id"] == cat_id), "글로벌")
+
+    prev = None
+    for k in ("previous_price_dollars", "previous_price"):
+        if mk.get(k) not in (None, ""):
+            try:
+                prev = float(mk[k])
+            except (TypeError, ValueError):
+                prev = None
+            if prev is not None and prev > 1:
+                prev = prev / 100.0
+            break
+
+    close_iso = mk.get("close_time") or ""
+    return {
+        "key": "kalshi-" + str(mk.get("ticker") or "").lower(),
+        "category": cat_id,
+        "rank": rank,
+        "no_feature": False,
+        "title": title,
+        # 브라우저 60초 실시간 조회는 Polymarket 전용이다(Kalshi 는 CORS 미허용 → 저장값 사용).
+        "mid": "",
+        "slug": "",
+        "condition_id": "",
+        "kalshi_ticker": mk.get("ticker") or "",
+        "source": SOURCE_KALSHI,
+        "source_key": "kalshi",
+        "question": question,
+        "option": sub,
+        "event_title": ev.get("title") or "",
+        "yes": round(p * 100, 1),
+        "no": round((1 - p) * 100, 1),
+        "change_24h": None if prev is None else round((p - prev) * 100, 1),
+        "change_1w": None,
+        "change_1m": None,
+        "volume_24h": int(round(kalshi_volume(mk, "volume_24h_fp", "volume_24h"))),
+        "volume_total": int(round(kalshi_volume(mk, "volume_fp", "volume"))),
+        "liquidity": None,
+        "open_interest": int(round(kalshi_volume(mk, "open_interest_fp", "open_interest"))),
+        "end_date": et_date(close_iso),
+        "end_iso": close_iso,
+        "explain": (cfg or {}).get("explain") or (
+            f"{cat_label} 분야의 글로벌 공개 시장 마켓입니다. 원문 질문은 \"{question}\"입니다. "
+            "표시된 확률은 이 마켓 참가자들이 매긴 기대값(0~100%)입니다."),
+        "watch": (cfg or {}).get("watch") or (
+            "확률 변화 폭과 거래량을 함께 보면 시장 참가자들이 얼마나 빠르게 기대를 바꾸는지 "
+            "가늠할 수 있습니다."),
+        "auto": cfg is None,
+    }
+
+
+KALSHI_BY_TICKER = {c["ticker"]: c for c in KALSHI_SERIES}
+
+
+def kalshi_get(path: str):
+    """Kalshi 공개 API 호출 — 앞 호스트가 막히면 예비 호스트로 재시도."""
+    for base in KALSHI_BASES:
+        data = http_json(base + path, tries=2, timeout=20)
+        if data:
+            return data
+    return None
+
+
+def kalshi_events() -> list[dict]:
+    """공개 /events 를 커서로 넘기며 상태 open 이벤트를 모은다(키 불필요)."""
+    out: list[dict] = []
+    cursor = ""
+    for _ in range(KALSHI_MAX_PAGES):
+        path = (f"/events?status=open&with_nested_markets=true&limit={KALSHI_PAGE_LIMIT}")
+        if cursor:
+            path += "&cursor=" + urllib.parse.quote(cursor)
+        data = kalshi_get(path)
+        if not data:
+            break
+        out.extend(data.get("events") or [])
+        cursor = data.get("cursor") or ""
+        if not cursor:
+            break
+        time.sleep(0.3)          # 과호출 방지
+    return out
+
+
+def kalshi_series_events() -> list[dict]:
+    """템플릿에 적어 둔 주요 시리즈는 따로 한 번씩 더 조회한다.
+
+    /events 기본 정렬은 최신·선거 이벤트가 상위에 몰려 금리·코인 마켓이 페이지 밖으로
+    밀리는 경우가 있어, 사이트에 꼭 필요한 시리즈는 series_ticker 로 직접 확인한다.
+    """
+    out: list[dict] = []
+    for cfg in KALSHI_SERIES:
+        data = kalshi_get(f"/events?series_ticker={cfg['ticker']}"
+                          f"&status=open&with_nested_markets=true&limit=20")
+        if data:
+            out.extend(data.get("events") or [])
+    return out
+
+
+def kalshi_close_dt(mk: dict):
+    iso = mk.get("close_time") or ""
+    if not iso:
+        return None
+    try:
+        return datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def fetch_kalshi(taken_topics: set[str]) -> list[dict]:
+    """Kalshi 공개 이벤트를 훑어 카테고리별 주요 마켓을 고른다.
+
+    - /events?status=open&with_nested_markets=true&limit=200 (커서 페이지네이션)
+    - KALSHI_CATEGORY_MAP 에 있는 카테고리만 사용
+    - 이벤트 24시간 거래량 합계가 KALSHI_MIN_VOLUME_24H 미만이면 제외
+    - 확률은 호가 차이가 KALSHI_MAX_SPREAD 이하일 때 중간값, 아니면 마지막 체결가
+    - 48시간 안에 끝나는 초단기 마켓은 카드·이슈 페이지로 쓰지 않는다
+    """
+    events = kalshi_events()
+    extra = kalshi_series_events()
+    if extra:
+        seen = {ev.get("event_ticker") for ev in events}
+        events.extend(ev for ev in extra if ev.get("event_ticker") not in seen)
+    if not events:
+        print("  ! Kalshi 이벤트를 받지 못했습니다.", file=sys.stderr)
+        return []
+    print(f"  · 공개 이벤트 {len(events)}개 수집(주요 시리즈 포함)")
+
+    now = datetime.now(timezone.utc)
+    cand: list[dict] = []
+    for ev in events:
+        cat = KALSHI_CATEGORY_MAP.get(ev.get("category") or "")
+        if not cat:
+            continue
+        live = [mk for mk in (ev.get("markets") or [])
+                if (mk.get("status") or "active") in ("active", "open")
+                and (mk.get("market_type") or "binary") == "binary"]
+        if not live:
+            continue
+        vol = sum(kalshi_volume(mk, "volume_24h_fp", "volume_24h") for mk in live)
+        if vol < KALSHI_MIN_VOLUME_24H:
+            continue
+        closes = [kalshi_close_dt(mk) for mk in live]
+        closes = [c for c in closes if c]
+        close_dt = min(closes) if closes else None
+        if close_dt and (close_dt - now) < timedelta(hours=KALSHI_MIN_HORIZON_H):
+            continue
+
+        priced = [(kalshi_price(mk), mk) for mk in live]
+        priced = [(p, mk) for p, mk in priced if p is not None]
+        if not priced:
+            continue
+
+        cfg = KALSHI_BY_TICKER.get(ev.get("series_ticker") or "")
+        mode = cfg.get("pick") if cfg else None
+        if mode:
+            mk = pick_kalshi_market(ev, mode)
+            if not mk:
+                continue
+        else:
+            mk = max(priced, key=lambda pm: (pm[0], kalshi_heat(pm[1])))[1]
+
+        blob = " ".join([mk.get("title") or "", ev.get("title") or "", mk.get("yes_sub_title") or ""])
+        if KOREA_BLOCK.search(blob):
+            continue
+        gossip = blocked_reason(mk.get("title") or "", ev.get("title") or "")
+        if gossip:
+            print(f"  · 가쉽·스캔들 제외('{gossip}'): {ev.get('event_ticker')}")
+            continue
+        if NOISE_BLOCK.search(blob):
+            continue
+        if cfg and cfg.get("topic"):
+            if cfg["topic"] in taken_topics:
+                print(f"  · 같은 이슈가 이미 있음({cfg['topic']}): {cfg['ticker']}")
+                continue
+            taken_topics.add(cfg["topic"])
+
+        item = build_kalshi_item(cfg, ev, mk, rank=20)
+        if not item:
+            continue
+        # 한국어 제목·해설이 붙지 않은 항목(번역 실패)은 카드로 내보내지 않는다.
+        if not re.search(r"[가-힣]", item["title"]):
+            continue
+        item["event_ticker"] = ev.get("event_ticker") or ""
+        item["series_ticker"] = ev.get("series_ticker") or item["event_ticker"].split("-")[0]
+        item["category"] = cat
+        item["_vol"] = vol
+        cand.append(item)
+
+    # 같은 시리즈(예: 월별 '최고 AI 모델')가 여러 회차로 잡히면 거래량이 큰 회차만 남긴다.
+    best: dict[str, dict] = {}
+    for it in cand:
+        key = (it["series_ticker"], it["category"])
+        prev = best.get(key)
+        if prev is None or (it.get("_vol") or 0) > (prev.get("_vol") or 0):
+            best[key] = it
+    cand = list(best.values())
+
+    # 카테고리별로 24시간 거래량 상위 KALSHI_PER_CATEGORY 개를 고른다(합계 최대 KALSHI_TOP_N).
+    picked: list[dict] = []
+    for cat in CATEGORIES:
+        rows = [it for it in cand if it["category"] == cat["id"]]
+        rows.sort(key=lambda it: -(it.get("_vol") or 0))
+        for i, it in enumerate(rows[:KALSHI_PER_CATEGORY]):
+            it["rank"] = 20 + i
+            it.pop("_vol", None)
+            picked.append(it)
+            print(f"  · {it['category']}: {it['title']} (YES {it['yes']}%)")
+    return picked[:KALSHI_TOP_N]
+
+
+def heat(item: dict) -> float:
+    """카드 정렬용 관심도 — Polymarket 은 24시간 거래량, Kalshi 는 여기에 미결제 약정을 조금 더한다."""
+    return float(item.get("volume_24h") or 0) + 0.01 * float(item.get("open_interest") or 0)
 
 
 def build(items: list[dict], pool_size: int) -> dict:
@@ -800,8 +1457,16 @@ def build(items: list[dict], pool_size: int) -> dict:
 
     order = {c["id"]: i for i, c in enumerate(CATEGORIES)}
     items.sort(key=lambda it: (order[it["category"]], it.get("rank", 90),
-                               0 if it["featured"] else 1, -it["volume_24h"]))
+                               0 if it["featured"] else 1, -heat(it)))
     counts = {c["id"]: sum(1 for it in items if it["category"] == c["id"]) for c in CATEGORIES}
+    sources = [
+        {"key": "kalshi", "label": SOURCE_KALSHI,
+         "count": sum(1 for it in items if it.get("source") == SOURCE_KALSHI),
+         "note": "미국 CFTC 인가 공개 예측시장"},
+        {"key": "polymarket", "label": SOURCE_POLYMARKET,
+         "count": sum(1 for it in items if it.get("source") == SOURCE_POLYMARKET),
+         "note": "글로벌 공개 예측시장"},
+    ]
 
     return {
         "schema": 1,
@@ -809,8 +1474,9 @@ def build(items: list[dict], pool_size: int) -> dict:
         "updated_at": now.isoformat(timespec="seconds"),
         "updated_at_utc": now.astimezone(timezone.utc).isoformat(timespec="seconds"),
         "updated_label": now.strftime("%Y년 %-m월 %-d일 %H:%M") + " (KST)",
-        "source": "Polymarket Gamma 공개 API",
-        "source_note": "글로벌 예측시장의 공개 확률 데이터를 한국어로 정리했습니다. "
+        "source": "Kalshi · Polymarket 공개 API",
+        "sources": [s for s in sources if s["count"]],
+        "source_note": "시장이 매긴 확률 데이터를 한국어로 정리했습니다. "
                        "베팅·거래 기능은 제공하지 않습니다.",
         "pool_size": pool_size,
         "count": len(items),
@@ -854,14 +1520,14 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="파일을 쓰지 않고 결과만 출력")
     args = ap.parse_args()
 
-    print("[1/4] Polymarket 공개 API에서 후보 마켓 수집")
+    print("[1/5] Polymarket 공개 API에서 후보 마켓 수집")
     pool = build_pool()
     if not pool:
         print("! 후보를 하나도 받지 못했습니다. 기존 파일을 유지합니다.", file=sys.stderr)
         return 1
     print(f"  → 후보 {len(pool)}개")
 
-    print("[2/4] 큐레이션 매칭")
+    print("[2/5] 큐레이션 매칭")
     items, used = [], set()
     for cat in CATEGORIES:
         rules = sorted([r for r in WATCH if r["cat"] == cat["id"]], key=lambda r: r["rank"])
@@ -880,7 +1546,7 @@ def main() -> int:
             used.add(row["mid"])
             taken += 1
 
-    print("[3/4] 부족한 카테고리 자동 선별")
+    print("[3/5] 부족한 카테고리 자동 선별")
     for cat in CATEGORIES:
         have = sum(1 for it in items if it["category"] == cat["id"])
         while have < TARGET_PER_CATEGORY:
@@ -890,6 +1556,18 @@ def main() -> int:
             items.append(build_auto(row, cat["id"]))
             used.add(row["mid"])
             have += 1
+
+    # 이미 실린 Polymarket 이슈와 같은 주제(topic)는 Kalshi 에서 다시 싣지 않는다.
+    taken_topics = {r["topic"] for r in WATCH
+                    if r.get("topic") and any(it["key"] == r["key"] for it in items)}
+    print("[4/5] Kalshi 공개 API에서 마켓 수집(미국 CFTC 인가)")
+    kalshi_items = fetch_kalshi(taken_topics)
+    if kalshi_items:
+        print(f"  → Kalshi {len(kalshi_items)}개 합치기")
+        items.extend(kalshi_items)
+    else:
+        print("  ! Kalshi 항목을 하나도 받지 못했습니다 — Polymarket 데이터로만 계속합니다.",
+              file=sys.stderr)
 
     # 마지막 안전망 — 카드 제목·해설까지 포함해 한 번 더 검사한다.
     kept = []
@@ -908,7 +1586,8 @@ def main() -> int:
         return 1
 
     data = build(items, len(pool))
-    print(f"[4/4] {len(items)}개 항목 / TOP3: {', '.join(data['featured'])}")
+    print(f"[5/5] {len(items)}개 항목 / TOP3: {', '.join(data['featured'])}")
+    print("  → 출처: " + ", ".join(f"{s['label']} {s['count']}개" for s in data["sources"]))
 
     if args.dry_run:
         print(json.dumps(data, ensure_ascii=False, indent=1)[:2000])
@@ -920,7 +1599,7 @@ def main() -> int:
     tmp.replace(OUT_PATH)
     print(f"  → {OUT_PATH.relative_to(ROOT)} 저장 완료")
 
-    print("[5/5] 이슈별 정적 페이지 · sitemap.xml 생성")
+    print("      이슈별 정적 페이지 · sitemap.xml 생성")
     build_static_pages()
     return 0
 
