@@ -1,0 +1,150 @@
+{
+ "crude-ath": {
+  "yes": 2,
+  "no": 1
+ },
+ "auto-7288834": {
+  "yes": 0,
+  "no": 1
+ },
+ "kalshi-kxethminy-27jan01-1500": {
+  "yes": 0,
+  "no": 1
+ },
+ "auto-7287079": {
+  "yes": 0,
+  "no": 1
+ },
+ "fed-dec-hold": {
+  "yes": 1,
+  "no": 3
+ },
+ "best-model-google-dec": {
+  "yes": 3,
+  "no": 0
+ },
+ "largest-company-apple": {
+  "yes": 2,
+  "no": 1
+ },
+ "auto-701502": {
+  "yes": 0,
+  "no": 1
+ },
+ "auto-7287077": {
+  "yes": 0,
+  "no": 2
+ },
+ "anthropic-2t": {
+  "yes": 1,
+  "no": 2
+ },
+ "kalshi-kxbtcminy-27jan01-55000.00": {
+  "yes": 0,
+  "no": 1
+ },
+ "kalshi-kxbtcy-27jan0100-b62500": {
+  "yes": 1,
+  "no": 0
+ },
+ "kalshi-kxhormuznorm-26mar17-b270401": {
+  "yes": 1,
+  "no": 0
+ },
+ "auto-7176939": {
+  "yes": 0,
+  "no": 1
+ },
+ "lepen-france": {
+  "yes": 3,
+  "no": 0
+ },
+ "kalshi-kxcodingmodel-26dec-anth": {
+  "yes": 1,
+  "no": 0
+ },
+ "kalshi-kxllm1-26dec31-goog": {
+  "yes": 0,
+  "no": 1
+ },
+ "auto-7043500": {
+  "yes": 0,
+  "no": 1
+ },
+ "kalshi-kxcpiyoy-26nov-t3.6": {
+  "yes": 1,
+  "no": 0
+ },
+ "auto-7411764": {
+  "yes": 0,
+  "no": 1
+ },
+ "russia-ukraine-ceasefire": {
+  "yes": 1,
+  "no": 2
+ },
+ "kalshi-kxratecutcount-26dec31-t0": {
+  "yes": 1,
+  "no": 0
+ },
+ "btc-50k-nov": {
+  "yes": 1,
+  "no": 1
+ },
+ "auto-6507392": {
+  "yes": 0,
+  "no": 1
+ },
+ "btc-60k-dec": {
+  "yes": 2,
+  "no": 0
+ },
+ "hormuz-normal": {
+  "yes": 1,
+  "no": 2
+ },
+ "satoshi-move": {
+  "yes": 0,
+  "no": 3
+ },
+ "kalshi-kxspacexcount-26nov-7": {
+  "yes": 1,
+  "no": 0
+ },
+ "kalshi-kxgovtshutdown-26dec12": {
+  "yes": 1,
+  "no": 0
+ },
+ "eth-3k-dec": {
+  "yes": 3,
+  "no": 0
+ },
+ "israel-iran-ceasefire": {
+  "yes": 3,
+  "no": 0
+ },
+ "kalshi-kxusairanagreement-27-27mar": {
+  "yes": 1,
+  "no": 0
+ },
+ "anthropic-flip-btc": {
+  "yes": 2,
+  "no": 0
+ },
+ "kalshi-kxu3-26nov-t4.1": {
+  "yes": 1,
+  "no": 0
+ },
+ "fed-jan-hike": {
+  "yes": 4,
+  "no": 0
+ },
+ "auto-676739": {
+  "yes": 0,
+  "no": 1
+ },
+ "fed-dec-hike": {
+  "yes": 3,
+  "no": 0
+ }
+}

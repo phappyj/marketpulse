@@ -77,13 +77,14 @@
 
   /* 금칙어 — 서버에서 한 번 더 검사합니다(즉시 안내용) */
   var BANNED = [
-    "토토", "사설토토", "배팅사이트", "먹튀", "바카라", "카지노", "슬롯", "파워볼",
-    "스포츠토토", "프로토", "온라인카지노", "레퍼럴", "추천인", "리퍼럴", "수익인증",
+    "토토", "사설", "사설토토", "배팅사이트", "먹튀", "바카라", "카지노", "슬롯", "파워볼",
+    "스포츠토토", "프로토", "온라인카지노", "배당률", "배당판", "역배", "정배",
+    "레퍼럴", "추천인", "리퍼럴", "수익인증",
     "리딩방", "텔레그램", "오픈채팅", "카톡주세요", "카톡문의", "디엠주세요", "대리입금",
     "환전", "선입금", "고정수익", "원금보장", "100%수익", "폭리",
     /* 접속 우회·가입 유도·입금 안내 금지 (해외 거래소 관련 법적 안전선) */
     "vpn", "우회", "가입링크", "추천인코드", "초대코드", "입금방법", "지갑연결",
-    "배당", "픽공유", "텔레그램방",
+    "픽공유", "텔레그램방",
     "씨발", "시발", "ㅅㅂ", "병신", "븅신", "좆", "지랄", "염병", "미친놈", "미친년",
     "개새끼", "새끼", "닥쳐", "꺼져"
   ];
@@ -240,6 +241,13 @@
       esc(s) + '</span>';
   }
 
+  /* 카드·상세에 붙는 갱신 주기 — Kalshi(2시간 저장값)와 Polymarket(1분 실시간)을 섮지 않게 */
+  function freshTag(it) {
+    var k = sourceOf(it) === "Kalshi";
+    return '<span class="fresh-tag ' + (k ? "kalshi" : "pm") + '">' +
+      (k ? "2시간마다 갱신" : "1분마다 실시간 갱신") + '</span>';
+  }
+
   /* Kalshi 거래량은 계약 수, Polymarket 은 금액이다. */
   function contracts(n) {
     if (n === null || n === undefined || n === "") return "—";
@@ -369,6 +377,7 @@
             '<span class="pcard-pv">' + pct(it.yes) + '<small>%</small></span>' +
             '<span class="gauge"><i style="width:' + Math.max(2, yes) + '%"></i></span>' +
             '<div class="pcard-meta">' + meta + '</div>' +
+            '<div class="pcard-fresh">' + freshTag(it) + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="pcard-foot">' +
@@ -428,7 +437,7 @@
     return '' +
       '<h2 class="dd-title" id="dd-title">' + esc(it.title) + '</h2>' +
       '<div class="dd-glob">' +
-        LB_GLOBAL +
+        LB_GLOBAL + freshTag(it) +
         '<div class="dd-prob">' +
           '<span class="dd-pv">' + pct(it.yes) + '<small>%</small></span>' +
           '<span class="side"><span>시장 NO</span><b>' + pct(it.no) + '%</b></span>' +
@@ -455,7 +464,9 @@
       '</div>' +
       '<a class="dd-open" href="issues/' + esc(issueSlug(it.key)) + '.html">' +
         '📄 이 이슈 상세 페이지 열기 ↗ <span>해설·1개월 변화·판정 기준</span></a>' +
-      '<div class="dd-src">출처 · ' + esc(sourceOf(it)) + ' 공개 데이터' + (it.auto ? ' · 자동 선별 항목' : '') + '</div>' +
+      '<div class="dd-src">출처 · ' + esc(sourceOf(it)) + ' 공개 데이터 · ' +
+        (sourceOf(it) === "Kalshi" ? '2시간마다 갱신되는 저장값' : '1분마다 실시간 갱신') +
+        (it.auto ? ' · 자동 선별 항목' : '') + '</div>' +
       '<div class="cmt-box" id="dd-cmt" data-cmt-box="' + esc(it.key) + '">' +
         '<div class="cmt-head">💬 이슈 댓글 <span class="n" data-cmt-count2="' + esc(it.key) + '">' + n + '</span></div>' +
         '<div class="cmt-list" data-cmt-list="' + esc(it.key) + '"></div>' +

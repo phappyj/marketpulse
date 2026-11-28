@@ -1486,12 +1486,35 @@ def build(items: list[dict], pool_size: int) -> dict:
     }
 
 
+def ensure_pillow(timeout: int = 240) -> None:
+    """OG 이미지는 Pillow 로 그린다. 없으면 이 실행에서만 pip 로 설치해 본다.
+
+    워크플로우 파일에 설치 단계를 넣지 않아도 되도록 스크립트가 스스로 준비한다.
+    설치도 실패하면 빌드는 계속하고 OG 이미지는 기존 것을 그대로 둔다.
+    """
+    try:
+        import PIL  # noqa: F401
+        return
+    except ImportError:
+        pass
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet",
+                        "--disable-pip-version-check", "Pillow"],
+                       check=True, timeout=timeout,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print("  · OG 이미지용 Pillow 를 설치했습니다.")
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! Pillow 설치 실패({e.__class__.__name__}) — OG 이미지는 기존 것을 유지합니다.",
+              file=sys.stderr)
+
+
 def build_static_pages() -> None:
     """데이터를 저장한 뒤 이슈별 정적 페이지와 sitemap.xml을 다시 만든다.
 
     GitHub Actions에서는 다음 커밋 단계가 생성물을 함께 실을 수 있도록 스테이징까지 한다.
     (워크플로우 파일을 고치지 않고도 매 갱신마다 페이지가 최신으로 유지된다.)
     """
+    ensure_pillow()
     script = Path(__file__).resolve().parent / "build_issue_pages.py"
     if not script.exists():
         print("  · 이슈 페이지 생성 스크립트가 없어 건너뜁니다.", file=sys.stderr)
@@ -1508,9 +1531,9 @@ def build_static_pages() -> None:
         try:
             # data/markets.json 은 일부러 스테이징하지 않는다. 워크플로우가 그 파일의
             # 변경 여부로 커밋 여부를 판단하므로, 미리 stage 하면 '변경 없음'으로 조기 종료된다.
-            subprocess.run(["git", "add", "-A", "issues", "sitemap.xml"],
+            subprocess.run(["git", "add", "-A", "issues", "og", "sitemap.xml", "index.html", "data/vote_tally.json"],
                            cwd=str(ROOT), check=True)
-            print("  · 생성물 스테이징 완료(issues/, sitemap.xml)")
+            print("  · 생성물 스테이징 완료(issues/, og/, sitemap.xml, index.html)")
         except (OSError, subprocess.CalledProcessError) as e:
             print(f"  ! git add 실패: {e}", file=sys.stderr)
 

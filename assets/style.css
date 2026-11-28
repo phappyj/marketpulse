@@ -272,6 +272,23 @@ img, svg { vertical-align: middle; }
 }
 .src-tag.kalshi { color: #0B5FA5; background: #EAF4FE; border-color: #CBE4FA; }
 .src-tag.pm { color: #4E5968; background: #F4F6F9; border-color: #E1E6EC; }
+
+/* 갱신 주기 — Kalshi(2시간 저장값)와 Polymarket(1분 실시간)을 색으로 구분해 카드에서 바로 보이게 */
+.fresh-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 750; letter-spacing: -.01em;
+  padding: 1px 6px; border-radius: 4px; line-height: 1.5;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.fresh-tag::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .55; }
+.fresh-tag.kalshi { color: #0B5FA5; background: #F2F8FE; border-color: #DCEBF9; }
+.fresh-tag.pm { color: #6B7684; background: #F6F8FA; border-color: #E7EBF0; }
+.pcard-fresh { margin-top: 5px; display: flex; }
+.dd-glob .fresh-tag { margin-left: 6px; vertical-align: middle; }
+@media (max-width: 560px) {
+  .fresh-tag { font-size: 9.5px; }
+  .pcard-fresh { margin-top: 4px; }
+}
 @media (max-width: 560px) {
   .src-tag { font-size: 9px; padding: 1px 4px; }
   .ctag { font-size: 10px; }
@@ -1049,6 +1066,7 @@ img, svg { vertical-align: middle; }
   border: 1px solid #E3EAF7; border-radius: 8px; padding: 16px 18px;
 }
 .ip-lb { display: block; font-size: 11px; font-weight: 750; color: var(--navy); letter-spacing: -.01em; }
+.ip-prob-main .fresh-tag { margin-top: 6px; }
 .ip-num {
   font-size: 42px; font-weight: 800; letter-spacing: -.055em; line-height: 1.1;
   color: var(--yes); font-variant-numeric: tabular-nums; margin-top: 2px;

@@ -35,10 +35,21 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from content_filter import blocked_reason  # noqa: E402
 DATA_PATH = ROOT / "data" / "markets.json"
 ISSUES_DIR = ROOT / "issues"
+OG_DIR = ROOT / "og"
+INDEX_PATH = ROOT / "index.html"
 SITEMAP_PATH = ROOT / "sitemap.xml"
+
+# 이슈별 OG 이미지 생성기(scripts/og_image.py) — Pillow·Pretendard 가 없으면 조용히 건너뛴다.
+try:
+    import og_image  # noqa: E402
+except Exception:  # noqa: BLE001
+    og_image = None
 
 SITE = "https://yecheukpan.kr"
 SITE_NAME = "예측판 YECHEUKPAN"
+
+# 출처별 갱신 주기 — Kalshi(2시간 저장값)와 Polymarket(1분 실시간)을 섞지 않는다.
+FRESH_TXT = {"Kalshi": "2시간마다 갱신", "Polymarket": "1분마다 실시간 갱신"}
 GA_ID = "G-D0QGKN71ZE"
 ADSENSE = "ca-pub-3318185141094112"
 
@@ -227,7 +238,7 @@ def render_redirect_stub(target: str, label: str) -> str:
 <meta http-equiv="refresh" content="0; url={href}">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="/assets/style.css?v=20261128rebrand">
+<link rel="stylesheet" href="/assets/style.css?v=20261128og">
 <!-- Google tag (gtag.js) — GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
 <script>
@@ -288,7 +299,22 @@ def render_redirect_stub(target: str, label: str) -> str:
 # 머리말 / 꼬리말 (모든 페이지가 같은 화이트·딥네이비 톤을 쓴다)
 # ---------------------------------------------------------------------------
 def head(title: str, desc: str, canonical: str, og_type: str = "article",
-         extra_ld: str = "", published: str = "") -> str:
+         extra_ld: str = "", published: str = "", og_image: str = "",
+         og_alt: str = "") -> str:
+    # 이슈 페이지는 이슈 전용 OG 이미지(1200×630)를 미리보기 카드로 쓴다.
+    if og_image:
+        og_img = (
+            f'<meta property="og:image" content="{E(og_image)}">\n'
+            f'<meta property="og:image:width" content="1200">\n'
+            f'<meta property="og:image:height" content="630">\n'
+            f'<meta property="og:image:type" content="image/png">\n'
+            f'<meta property="og:image:alt" content="{E(og_alt or title)}">\n'
+            '<meta name="twitter:card" content="summary_large_image">\n'
+            f'<meta name="twitter:image" content="{E(og_image)}">\n'
+            f'<meta name="twitter:image:alt" content="{E(og_alt or title)}">'
+        )
+    else:
+        og_img = ('<meta name="twitter:card" content="summary">')
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -308,14 +334,14 @@ def head(title: str, desc: str, canonical: str, og_type: str = "article",
 <meta property="og:title" content="{E(title)}">
 <meta property="og:description" content="{E(desc)}">
 <meta property="og:url" content="{E(canonical)}">
-<meta name="twitter:card" content="summary">
+{og_img}
 <meta name="twitter:title" content="{E(title)}">
 <meta name="twitter:description" content="{E(desc)}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/style.css?v=20261128rebrand">
+<link rel="stylesheet" href="/assets/style.css?v=20261128og">
 <script type="application/ld+json">
 {extra_ld}
 </script>
@@ -521,6 +547,7 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
     title = pretty_title(it.get("title", ""))
     yes, no = float(it.get("yes") or 0), float(it.get("no") or 0)
     canonical = f"{SITE}/issues/{slug}.html"
+    og_url = f"{SITE}/og/{slug}.png"
     updated_day = (data.get("updated_at") or "")[:10]
 
     page_title = f"{title} — 시장 확률 {num1(yes)}% | 예측판"
@@ -571,6 +598,10 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
         if it.get("auto") else ""
     )
 
+    src = source_of(it)
+    fresh = FRESH_TXT.get(src, FRESH_TXT["Polymarket"])
+    fresh_cls = "kalshi" if src == "Kalshi" else "pm"
+
     body = f"""
 <main class="wrap">
   <nav class="ip-crumb" aria-label="페이지 위치">
@@ -588,13 +619,14 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
         <p class="ip-meta-line">
           <span>마감 <b>{E(end_kr(it.get("end_date", "")))}</b>{f' · {E(dl)}' if dl else ''}</span>
           <span>데이터 기준 <b>{E(data.get("updated_label") or "")}</b></span>
-          <span>출처 <b>{E(source_of(it))} 공개 데이터</b></span>
+          <span>출처 <b>{E(src)} 공개 데이터</b> · {E(fresh)}</span>
         </p>
       </header>
 
       <div class="ip-prob">
         <div class="ip-prob-main">
           <span class="ip-lb">🌐 글로벌 시장 확률 · YES</span>
+          <span class="fresh-tag {fresh_cls}">{E(fresh)}</span>
           <div class="ip-num">{num1(yes)}<small>%</small></div>
           <span class="ip-no">NO <b>{num1(no)}%</b></span>
         </div>
@@ -668,7 +700,7 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
           <a href="/disclaimer.html">면책 고지</a>를 참고하세요.</p>
         <p class="ip-small">이 페이지의 수치는 {E(data.get("updated_label") or "")} 기준 저장 데이터이며,
           2시간마다 자동으로 새로 만들어집니다. 홈에서는 같은 이슈를 1분 단위 실시간 확률로 볼 수 있습니다.
-          {'Kalshi 항목은 공개 API가 브라우저 교차 출처 요청을 허용하지 않아 저장값을 그대로 표시합니다.' if it.get('source') == 'Kalshi' else ''}</p>
+          {'Kalshi 항목은 공개 API가 브라우저 교차 출처 요청을 허용하지 않아 저장값을 그대로 표시하며, 1분마다 실시간으로 갱신되는 Polymarket 항목과 숫자가 다를 수 있습니다.' if it.get('source') == 'Kalshi' else ''}</p>
       </div>
 
       <p class="ip-actions">
@@ -681,7 +713,9 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
   </article>
 </main>
 """
-    return head(page_title, desc, canonical, "article", json.dumps(ld, ensure_ascii=False, indent=2)) + body + FOOT
+    return head(page_title, desc, canonical, "article",
+                json.dumps(ld, ensure_ascii=False, indent=2),
+                og_image=og_url, og_alt=f"{title} — 글로벌 시장 확률 {num1(yes)}%") + body + FOOT
 
 
 # ---------------------------------------------------------------------------
@@ -756,6 +790,58 @@ def render_hub(items: list, data: dict, slug_map: dict) -> str:
 </main>
 """
     return head(title, desc, canonical, "website", json.dumps(ld, ensure_ascii=False, indent=2)) + body + FOOT
+
+
+# ---------------------------------------------------------------------------
+# 이슈별 OG 이미지(og/{slug}.png, 1200×630)
+# ---------------------------------------------------------------------------
+def build_og_images(items: list, slug_map: dict, data: dict) -> int:
+    """이슈마다 SNS·검색 미리보기용 OG 이미지를 만든다. 쓸 수 없는 환경이면 0."""
+    if og_image is None or not og_image.fonts_available():
+        print("  · OG 이미지 생성기를 쓰지 못합니다(Pillow 또는 Pretendard 폰트 없음) — 기존 이미지를 유지합니다.")
+        return 0
+    OG_DIR.mkdir(parents=True, exist_ok=True)
+    votes = og_image.fetch_vote_tally()
+    keep, made = set(), 0
+    for it in items:
+        name = f"{slug_map[it['key']]}.png"
+        keep.add(name)
+        try:
+            png = og_image.render(it, votes, data.get("updated_label") or "")
+        except Exception as e:  # noqa: BLE001 — 한 장이 실패해도 나머지는 만든다
+            print(f"  ! OG 이미지 생성 실패({it.get('key')}): {e}")
+            continue
+        p = OG_DIR / name
+        if p.exists() and p.read_bytes() == png:
+            continue
+        p.write_bytes(png)
+        made += 1
+    # 지금 목록에 없는 이슈의 이미지는 정리 (남겨 두면 og/ 가 계속 쌓인다)
+    for old in OG_DIR.glob("*.png"):
+        if old.name not in keep:
+            old.unlink()
+    print(f"  · OG 이미지 {len(keep)}장 (이번에 새로 쓴 것 {made}장)")
+    return len(keep)
+
+
+def sync_index_count(count: int) -> None:
+    """index.html 첫 화면의 '오늘의 이슈 N개'를 실제 이슈 수와 맞춘다.
+
+    JS 가 데이터를 불러오면 바로 고쳐지지만, 그 전 몇 초·크롤러가 읽는 초기 HTML 에
+    옛 숫자가 남지 않도록 빌드할 때 같이 바꿔 둔다.
+    """
+    try:
+        doc = INDEX_PATH.read_text(encoding="utf-8")
+    except OSError:
+        return
+    new, n = re.subn(
+        r'(<span class="cnt" id="pill-count">)오늘의 이슈 [\d,]+개(</span>)',
+        lambda m: f"{m.group(1)}오늘의 이슈 {count}개{m.group(2)}",
+        doc, count=1,
+    )
+    if n and new != doc:
+        INDEX_PATH.write_text(new, encoding="utf-8")
+        print(f"  · index.html 초기 문구 → 오늘의 이슈 {count}개")
 
 
 # ---------------------------------------------------------------------------
@@ -842,6 +928,10 @@ def main() -> int:
     ISSUES_DIR.mkdir(parents=True, exist_ok=True)
     for name, html_doc in pages.items():
         (ISSUES_DIR / name).write_text(html_doc, encoding="utf-8")
+
+    # 이슈별 OG 이미지 + index.html 초기 문구의 이슈 수 동기화
+    build_og_images(items, slug_map, data)
+    sync_index_count(len(items))
 
     # 사라진 이슈 페이지 정리 — 지우지 않고 "새 주소로 이동" 안내 페이지로 바꾼다.
     # (검색엔진·블로그·X에 남은 구 주소가 404가 되지 않도록)
