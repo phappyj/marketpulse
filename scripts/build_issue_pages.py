@@ -227,7 +227,7 @@ def render_redirect_stub(target: str, label: str) -> str:
 <meta http-equiv="refresh" content="0; url={href}">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="/assets/style.css?v=20261124issue">
+<link rel="stylesheet" href="/assets/style.css?v=20261128rebrand">
 <!-- Google tag (gtag.js) — GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
 <script>
@@ -315,7 +315,7 @@ def head(title: str, desc: str, canonical: str, og_type: str = "article",
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/style.css?v=20261124issue">
+<link rel="stylesheet" href="/assets/style.css?v=20261128rebrand">
 <script type="application/ld+json">
 {extra_ld}
 </script>

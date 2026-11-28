@@ -23,7 +23,7 @@ HEAD = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=20261120v">
+<link rel="stylesheet" href="assets/style.css?v=20261128rebrand">
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 <!-- Google tag (gtag.js) — GA4 -->
