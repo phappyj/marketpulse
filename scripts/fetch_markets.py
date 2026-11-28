@@ -1531,8 +1531,10 @@ def build_static_pages() -> None:
         try:
             # data/markets.json 은 일부러 스테이징하지 않는다. 워크플로우가 그 파일의
             # 변경 여부로 커밋 여부를 판단하므로, 미리 stage 하면 '변경 없음'으로 조기 종료된다.
-            subprocess.run(["git", "add", "-A", "issues", "og", "sitemap.xml", "index.html", "data/vote_tally.json"],
-                           cwd=str(ROOT), check=True)
+            paths = ["issues", "og", "sitemap.xml", "index.html"]
+            if (ROOT / "data" / "vote_tally.json").exists():
+                paths.append("data/vote_tally.json")
+            subprocess.run(["git", "add", "-A"] + paths, cwd=str(ROOT), check=True)
             print("  · 생성물 스테이징 완료(issues/, og/, sitemap.xml, index.html)")
         except (OSError, subprocess.CalledProcessError) as e:
             print(f"  ! git add 실패: {e}", file=sys.stderr)
