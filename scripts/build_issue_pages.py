@@ -238,7 +238,7 @@ def render_redirect_stub(target: str, label: str) -> str:
 <meta http-equiv="refresh" content="0; url={href}">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="/assets/style.css?v=20261128og">
+<link rel="stylesheet" href="/assets/style.css?v=20261128emb">
 <!-- Google tag (gtag.js) — GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
 <script>
@@ -341,7 +341,8 @@ def head(title: str, desc: str, canonical: str, og_type: str = "article",
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/style.css?v=20261128og">
+<link rel="stylesheet" href="/assets/style.css?v=20261128emb">
+<script src="/assets/embed.js?v=20261128emb" defer></script>
 <script type="application/ld+json">
 {extra_ld}
 </script>
@@ -514,6 +515,46 @@ def issue_card_row(it: dict, slug: str) -> str:
     )
 
 
+# ---------------------------------------------------------------------------
+# 퍼가는 확률 카드(임베드) — /embed.html?id={slug}
+# ---------------------------------------------------------------------------
+def embed_snippet(slug: str, title: str) -> str:
+    """블로그에 붙일 <iframe> 한 줄. 높이는 180px 고정, 너비는 넣는 곳에 맞춘다."""
+    alt = f"{pretty_title(title)} — 예측판 확률 카드"
+    return (
+        f'<iframe src="{SITE}/embed.html?id={slug}" width="100%" height="180" '
+        'style="max-width:520px;border:0;overflow:hidden" '
+        f'title="{E(alt)}" loading="lazy" scrolling="no"></iframe>'
+    )
+
+
+def embed_section(it: dict, slug: str) -> str:
+    """이슈 상세 페이지의 '퍼가기' 박스 — 미리보기 + 복사할 코드 + 복사 버튼."""
+    title = pretty_title(it.get("title", ""))
+    code = embed_snippet(slug, title)
+    cid = f"emb-code-{slug}"
+    return f"""
+      <section class="ip-sec" id="share">
+        <h2>이 확률 카드 퍼가기 <span class="ip-cnt">임베드</span></h2>
+        <div class="emb-box">
+          <div class="emb-prev">
+            <iframe src="/embed.html?id={E(slug)}" width="100%" height="180"
+                    title="퍼가기 카드 미리보기" loading="lazy" scrolling="no"></iframe>
+          </div>
+          <p class="emb-desc">블로그·카페·노션처럼 HTML을 붙일 수 있는 곳에 아래 코드를 넣으면
+            이 이슈의 YES 확률과 24시간 변동이 담긴 카드가 표시됩니다. 카드를 누르면 예측판의 이 이슈 페이지로 이동합니다.</p>
+          <pre class="emb-code" id="{E(cid)}">{html.escape(code)}</pre>
+          <p class="emb-actions">
+            <button class="btn primary sm" type="button" data-copy-embed="{E(cid)}">임베드 코드 복사</button>
+            <a class="btn sm" href="/embed.html?id={E(slug)}" target="_blank" rel="noopener">카드만 열어 보기 ↗</a>
+          </p>
+          <p class="emb-small">가로는 넣는 곳 너비에 맞춰 늘어나고 세로는 180px 고정입니다.
+            카드 숫자는 예측판 저장 데이터(2시간마다 갱신) 기준이며, 카드에는 광고·추적 스크립트를 넣지 않습니다.</p>
+        </div>
+      </section>
+"""
+
+
 def related_pick(items: list, cur: dict, same_cat: int = 4, other_cat: int = 4):
     """같은 카테고리 우선 + 다른 카테고리에서 거래량 순으로 내부 링크 후보를 고른다."""
     rest = [x for x in items if x.get("key") != cur.get("key")]
@@ -679,6 +720,8 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
           같은 사건도 확률이 달라질 수 있습니다. 숫자를 비교할 때는 원문 질문과 마감일을 함께 확인하세요.</p>
       </section>
 
+{embed_section(it, slug)}
+
       <section class="ip-sec">
         <h2>{E(cat_label)} 다른 이슈</h2>
         <ul class="ip-related">
@@ -706,7 +749,7 @@ def render_issue(it: dict, items: list, data: dict, slug_map: dict) -> str:
       <p class="ip-actions">
         <a class="btn primary" href="/#/live">홈에서 실시간 확률 보기</a>
         <a class="btn" href="/issues/">이슈 전체 목록</a>
-        <a class="btn ghost" href="/#/guide">확률 읽는 법</a>
+        <a class="btn ghost" href="#share">이 카드 퍼가기</a>
       </p>
 
     </div>

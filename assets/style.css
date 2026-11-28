@@ -1151,6 +1151,45 @@ img, svg { vertical-align: middle; }
 .ip-note p:last-child { margin-bottom: 0; }
 .ip-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
 
+/* ---- 퍼가는 확률 카드(임베드) ---- */
+.emb-box {
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2);
+  padding: 14px 16px 12px;
+}
+.emb-prev { margin: 0 0 10px; }
+.emb-prev iframe,
+.dd-emb-prev {
+  display: block; width: 100%; max-width: 520px; height: 180px;
+  border: 0; border-radius: 10px; background: #fff; overflow: hidden;
+}
+.emb-desc { margin: 0 0 10px; font-size: 12.2px; color: var(--muted); line-height: 1.75; }
+.emb-code {
+  margin: 0 0 10px; padding: 10px 12px; max-height: 140px; overflow: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px; line-height: 1.65; color: var(--ink-2);
+  white-space: pre-wrap; word-break: break-all; -webkit-user-select: all; user-select: all;
+}
+.emb-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.emb-small { margin: 0; font-size: 11px; color: var(--meta); line-height: 1.7; }
+
+/* 홈 이슈 상세 모달 안의 퍼가기 박스 */
+.dd-emb {
+  margin-top: 14px; padding: 12px 12px 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2);
+}
+.dd-emb-hd {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px;
+  font-size: 12.5px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 8px;
+}
+.dd-emb-hd span { font-weight: 600; font-size: 11px; color: var(--meta); letter-spacing: 0; }
+.dd-emb .emb-code { font-size: 11px; margin-bottom: 8px; }
+
+@media (max-width: 620px) {
+  .emb-box { padding: 12px 12px 10px; }
+  .emb-code { font-size: 11px; }
+}
+
 @media (max-width: 620px) {
   .ip-head h1 { font-size: 19.5px; }
   .ip-prob { grid-template-columns: minmax(0, 1fr); gap: 12px; }

@@ -426,6 +426,14 @@
   }
 
   /* ---------------- 이슈 상세 (모달) ---------------- */
+  /* 퍼가는 확률 카드 — /embed.html?id={slug} (scripts/build_issue_pages.py 의 embed_snippet 과 같은 코드) */
+  function embedCode(it) {
+    var slug = issueSlug(it.key);
+    return '<iframe src="https://yecheukpan.kr/embed.html?id=' + slug + '" width="100%" height="180" ' +
+      'style="max-width:520px;border:0;overflow:hidden" title="' + esc(it.title) +
+      ' — 예측판 확률 카드" loading="lazy" scrolling="no"></iframe>';
+  }
+
   function detailHTML(it) {
     var yes = Math.max(0, Math.min(100, Number(it.yes) || 0));
     var dl = daysLeft(it.end_date);
@@ -464,6 +472,16 @@
       '</div>' +
       '<a class="dd-open" href="issues/' + esc(issueSlug(it.key)) + '.html">' +
         '📄 이 이슈 상세 페이지 열기 ↗ <span>해설·1개월 변화·판정 기준</span></a>' +
+      '<div class="dd-emb">' +
+        '<div class="dd-emb-hd">🧩 이 확률 카드 퍼가기 <span>블로그·카페에 붙이면 확률 카드가 보입니다</span></div>' +
+        '<iframe class="dd-emb-prev" src="/embed.html?id=' + esc(issueSlug(it.key)) + '" width="100%" height="180"' +
+          ' title="퍼가기 카드 미리보기" loading="lazy" scrolling="no"></iframe>' +
+        '<pre class="emb-code" id="emb-code-m-' + esc(issueSlug(it.key)) + '">' + esc(embedCode(it)) + '</pre>' +
+        '<div class="emb-actions">' +
+          '<button class="btn primary sm" type="button" data-copy-embed="emb-code-m-' + esc(issueSlug(it.key)) + '">임베드 코드 복사</button>' +
+          '<a class="btn sm" href="/embed.html?id=' + esc(issueSlug(it.key)) + '" target="_blank" rel="noopener">카드만 열어 보기 ↗</a>' +
+        '</div>' +
+      '</div>' +
       '<div class="dd-src">출처 · ' + esc(sourceOf(it)) + ' 공개 데이터 · ' +
         (sourceOf(it) === "Kalshi" ? '2시간마다 갱신되는 저장값' : '1분마다 실시간 갱신') +
         (it.auto ? ' · 자동 선별 항목' : '') + '</div>' +

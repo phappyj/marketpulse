@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=20261128og">
+<link rel="stylesheet" href="assets/style.css?v=20261128emb">
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3318185141094112" crossorigin="anonymous"></script>
 <!-- Google tag (gtag.js) — GA4 -->
@@ -69,7 +69,19 @@
       <li>이슈별 현재 확률과 최근 변화 확인</li>
       <li>이슈 배경에 대한 한국어 해설 읽기</li>
       <li>한줄 의견 투표와 자유 게시판 이용</li>
+      <li>이슈 확률 카드를 블로그·카페에 퍼가기(임베드)</li>
     </ul>
+
+    <h2>확률 카드 퍼가기</h2>
+    <p>이슈 상세 페이지의 <strong>‘이 확률 카드 퍼가기’</strong>에서 코드를 복사해, HTML을 붙일 수 있는 곳에 넣으면
+      아래처럼 이슈의 YES 확률·24시간 변동·출처가 담긴 카드가 표시됩니다. 카드를 누르면 예측판의 해당 이슈 페이지로 이동합니다.</p>
+    <div class="emb-prev">
+      <iframe src="/embed.html?id=fed-dec-hike" width="100%" height="180"
+              title="퍼가기 카드 예시 — 12월 FOMC 금리" loading="lazy" scrolling="no"></iframe>
+    </div>
+    <p class="ip-small">가로는 넣는 곳 너비에 맞춰 늘어나고 세로는 180px 고정입니다. 광고·추적 스크립트가 없는
+      가벼운 카드(약 10KB)이며, 숫자는 예측판 저장 데이터(2시간마다 갱신)를 따릅니다.
+      카드 주소는 <code>/embed.html?id=이슈주소</code> 형식입니다.</p>
 
     <h2>예측판에 없는 것</h2>
     <ul>
